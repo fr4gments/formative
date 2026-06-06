@@ -57,12 +57,20 @@ const style = visualStyleForProgram(program, 12);
 assert.equal(style["--ikal-a"].startsWith("rgb("), true);
 assert.equal(style["--ikal-b"].startsWith("rgb("), true);
 assert.equal(style["--ikal-c"].startsWith("rgb("), true);
+assert.equal(style["--ikal-d"].startsWith("rgb("), true);
+assert.equal(style["--ikal-angle"].endsWith("deg"), true);
 assert.equal(style["--ikal-shift"].endsWith("%"), true);
+assert.equal(style["--ikal-drift"].endsWith("%"), true);
+assert.equal(style["--ikal-stop-a"].endsWith("%"), true);
+assert.equal(style["--ikal-stop-b"].endsWith("%"), true);
+assert.equal(style["--ikal-stop-c"].endsWith("%"), true);
+assert.equal(style["--ikal-stop-d"].endsWith("%"), true);
 assert.equal(style["--ikal-red-x"].endsWith("px"), true);
 assert.equal(style["--ikal-cyan-x"].endsWith("px"), true);
 assert.equal(style["--ikal-skew"].endsWith("deg"), true);
 assert.equal(Number(style["--ikal-contrast"]) > 1, true);
 assert.equal(Number(style["--ikal-saturate"]) > 1, true);
+assert.equal(Number(style["--ikal-band-alpha"]) > 0, true);
 
 const styleCalls = [];
 applyVisualStyle({
@@ -70,6 +78,9 @@ applyVisualStyle({
     setProperty: (name, value) => styleCalls.push([name, value]),
   },
 }, program, 12);
-assert.equal(styleCalls.length, 11);
+assert.deepEqual(
+  styleCalls.map(([name]) => name),
+  Object.keys(style),
+);
 
 console.log("poc-animation ok");

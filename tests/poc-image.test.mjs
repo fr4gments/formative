@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 
+import { visualStyleForProgram } from "../src/engines/poc-animation.js";
 import { createPocImage, renderAsciiImage, renderColorAsciiImage } from "../src/engines/poc-image.js";
 
 const program = {
@@ -59,7 +60,10 @@ const drawn = engine.draw({ cols: 6, rows: 2, program });
 
 assert.equal(screen.textContent, drawn);
 assert.equal(screen.textContent.split("\n").length, 2);
-assert.equal(styleCalls.length, 11);
+assert.deepEqual(
+  styleCalls.map(([name]) => name),
+  Object.keys(visualStyleForProgram(program)),
+);
 
 engine.clear();
 assert.equal(screen.textContent, "");

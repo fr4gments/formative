@@ -18,16 +18,26 @@
     font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
     font-size: 15px; line-height: 1; letter-spacing: 0;
     white-space: pre; user-select: none; contain: content;
-    --ikal-a: #00f0ff; --ikal-b: #ff2fb3; --ikal-c: #d7ff34;
-    --ikal-glow: rgba(124,252,106,0.7); --ikal-shift: 0%;
+    --ikal-a: #00f0ff; --ikal-b: #ff2fb3; --ikal-c: #d7ff34; --ikal-d: #ffffff;
+    --ikal-angle: 115deg; --ikal-glow: rgba(124,252,106,0.7);
+    --ikal-shift: 0%; --ikal-drift: 0%;
+    --ikal-stop-a: 16%; --ikal-stop-b: 38%; --ikal-stop-c: 62%; --ikal-stop-d: 82%;
     --ikal-red-x: 1px; --ikal-cyan-x: -1px; --ikal-skew: 0deg;
-    --ikal-contrast: 1.15; --ikal-saturate: 1.35; --ikal-scan: 0.18;
+    --ikal-contrast: 1.15; --ikal-saturate: 1.35; --ikal-scan: 0.18; --ikal-band-alpha: 0.20;
     background-image:
       repeating-linear-gradient(180deg, rgba(255,255,255,var(--ikal-scan)) 0 1px, rgba(0,0,0,0) 1px 3px),
-      repeating-linear-gradient(90deg, rgba(255,47,179,0) 0 19px, rgba(255,47,179,0.34) 20px 21px, rgba(0,239,255,0.22) 22px 23px, rgba(0,0,0,0) 24px 43px),
-      linear-gradient(115deg, var(--ikal-a) 0%, var(--ikal-b) 42%, var(--ikal-c) 68%, #ffffff 100%);
-    background-size: 100% 6px, 54px 100%, 185% 185%;
-    background-position: 0 0, var(--ikal-shift) 0, var(--ikal-shift) 0;
+      repeating-linear-gradient(90deg, rgba(255,47,179,0) 0 15px, rgba(255,47,179,var(--ikal-band-alpha)) 16px 18px, rgba(0,239,255,0.30) 19px 21px, rgba(0,0,0,0) 22px 39px),
+      linear-gradient(90deg, transparent 0 28%, var(--ikal-d) 34%, transparent 41%, transparent 64%, var(--ikal-a) 70%, transparent 76%),
+      linear-gradient(var(--ikal-angle),
+        var(--ikal-a) 0%,
+        var(--ikal-a) var(--ikal-stop-a),
+        var(--ikal-b) var(--ikal-stop-b),
+        var(--ikal-c) var(--ikal-stop-c),
+        var(--ikal-d) var(--ikal-stop-d),
+        var(--ikal-a) 100%);
+    background-size: 100% 6px, 48px 100%, 92% 100%, 205% 205%;
+    background-position: 0 0, var(--ikal-shift) 0, var(--ikal-drift) 0, var(--ikal-shift) var(--ikal-drift);
+    background-blend-mode: screen, screen, color-dodge, normal;
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

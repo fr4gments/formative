@@ -25,6 +25,13 @@ const PALETTES = {
   ],
 };
 
+const ACCENTS = {
+  k: [255, 47, 179],
+  r: [0, 239, 255],
+  s: [255, 47, 179],
+  rest: [0, 239, 255],
+};
+
 function bruit(x, y, s) {
   let h = (x * 374761393 + y * 668265263 + s * 1274126177) | 0;
   h = (h ^ (h >> 13)) * 1274126177;
@@ -264,14 +271,26 @@ export function glyphColor(x, y, f, p) {
 
 export function visualStyleForProgram(program, frame = 0) {
   const palette = program ? PALETTES[program.root] || PALETTES.rest : PALETTES.rest;
+  const accent = program ? ACCENTS[program.root] || ACCENTS.rest : ACCENTS.rest;
   const tx = program?.suffixes.includes("tx") ? 1 : 0;
   const sk = program?.suffixes.includes("šk") ? 1 : 0;
   const ghost = program?.matter === "RPV" ? 0.78 : 1;
   const level = glitchLevel(program);
   const pulse = bruit(frame, frame >> 2, 211);
   const jitter = pulse > 0.82 ? level : level * 0.22;
-  const hot = mixColor(palette[1], palette[2], sk ? 0.88 : 0.45);
-  const shift = ((frame * (program?.motion === "DYN" ? 1.6 : 0.45)) % 100).toFixed(2) + "%";
+  const rootTilt = program?.root === "k" ? -22 : program?.root === "s" ? 18 : 6;
+  const hot = mixColor(palette[1], palette[2], sk ? 0.94 : 0.54);
+  const edge = mixColor(accent, palette[2], tx ? 0.12 : sk ? 0.28 : 0.42);
+  const speed = program?.motion === "DYN"
+    ? 2.35 + level * 2.2 + tx * 1.15
+    : 0.52 + level * 0.65;
+  const shift = ((frame * speed) % 140 - 20).toFixed(2) + "%";
+  const drift = ((frame * (program?.motion === "DYN" ? 1.35 + level : 0.28)) % 120 - 10).toFixed(2) + "%";
+  const angle = (105 + rootTilt + Math.sin(frame * 0.045) * (8 + level * 22)).toFixed(2) + "deg";
+  const stopA = (13 + pulse * 9).toFixed(2) + "%";
+  const stopB = (34 + level * 12 + pulse * 8).toFixed(2) + "%";
+  const stopC = (58 + sk * 9 - tx * 5 + pulse * 5).toFixed(2) + "%";
+  const stopD = (78 + level * 8).toFixed(2) + "%";
   const glow = tx
     ? "rgba(255,47,179,0.92)"
     : sk
@@ -285,14 +304,22 @@ export function visualStyleForProgram(program, frame = 0) {
     "--ikal-a": colorToCss(mixColor(palette[0], [0, 0, 0], 1 - ghost)),
     "--ikal-b": colorToCss(palette[1]),
     "--ikal-c": colorToCss(hot),
+    "--ikal-d": colorToCss(edge),
+    "--ikal-angle": angle,
     "--ikal-glow": glow,
     "--ikal-shift": shift,
+    "--ikal-drift": drift,
+    "--ikal-stop-a": stopA,
+    "--ikal-stop-b": stopB,
+    "--ikal-stop-c": stopC,
+    "--ikal-stop-d": stopD,
     "--ikal-red-x": chroma,
     "--ikal-cyan-x": cyan,
     "--ikal-skew": skew,
     "--ikal-contrast": (1.08 + level * 0.42 + sk * 0.12).toFixed(2),
     "--ikal-saturate": (1.18 + level * 0.95 + tx * 0.30).toFixed(2),
     "--ikal-scan": (0.12 + level * 0.18).toFixed(2),
+    "--ikal-band-alpha": (0.16 + level * 0.26 + tx * 0.10).toFixed(2),
   };
 }
 
