@@ -47,6 +47,18 @@ const colorImage = renderColorAsciiImage({
 assert.equal(colorImage.includes("<span"), false);
 assert.equal(colorImage.split("\n").length, 2);
 
+const layeredImage = renderColorAsciiImage({
+  cols: 5,
+  rows: 2,
+  programs: [
+    program,
+    { ...program, root: "r", suffixes: ["šk"] },
+  ],
+});
+
+assert.equal(layeredImage.includes("<span"), false);
+assert.equal(layeredImage.split("\n").length, 2);
+
 const styleCalls = [];
 const screen = {
   innerHTML: "old",
@@ -67,5 +79,27 @@ assert.deepEqual(
 
 engine.clear();
 assert.equal(screen.textContent, "");
+
+const layeredStyleCalls = [];
+const layeredScreen = {
+  textContent: "",
+  style: {
+    setProperty: (name, value) => layeredStyleCalls.push([name, value]),
+  },
+};
+const layeredEngine = createPocImage({ screen: layeredScreen });
+layeredEngine.draw({
+  cols: 6,
+  rows: 2,
+  programs: [
+    program,
+    { ...program, root: "r", suffixes: ["šk"] },
+  ],
+});
+assert.equal(layeredScreen.textContent.split("\n").length, 2);
+assert.deepEqual(
+  layeredStyleCalls.map(([name]) => name),
+  Object.keys(visualStyleForProgram(program)),
+);
 
 console.log("poc-image ok");

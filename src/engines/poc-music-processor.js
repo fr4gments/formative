@@ -1,21 +1,33 @@
-import { sampleFloatAudio } from "./poc-float-audio.js";
+import { sampleFloatLayers } from "./poc-float-audio.js";
+
+function normalizeLayer(layer) {
+  const sequence = Array.isArray(layer) ? layer : layer.sequence || [];
+
+  return {
+    sequence,
+    text: Array.isArray(layer) ? "" : layer.text || "",
+  };
+}
 
 class IkalPocMusicProcessor extends AudioWorkletProcessor {
   constructor() {
     super();
 
-    this.sequence = [];
-    this.stepCourant = 0;
+    this.layers = [];
+    this.layerSteps = [];
     this.sampleIndex = 0;
 
     this.port.onmessage = (event) => {
       const message = event.data;
 
       if (message.type === "setSequence") {
-        this.sequence = message.sequence;
+        this.layers = [normalizeLayer(message.sequence)];
+        this.resetClock();
+      } else if (message.type === "setLayers") {
+        this.layers = message.layers.map(normalizeLayer);
         this.resetClock();
       } else if (message.type === "clearSequence") {
-        this.sequence = [];
+        this.layers = [];
         this.resetClock();
       }
     };
@@ -23,19 +35,26 @@ class IkalPocMusicProcessor extends AudioWorkletProcessor {
 
   resetClock() {
     this.sampleIndex = 0;
-    this.setStep(0);
+    this.setLayerSteps(this.layers.map(() => 0));
   }
 
-  setStep(step) {
-    if (step !== this.stepCourant) {
-      this.stepCourant = step;
-      this.port.postMessage({ type: "step", step });
+  setLayerSteps(steps) {
+    const changed = steps.length !== this.layerSteps.length ||
+      steps.some((step, index) => step !== this.layerSteps[index]);
+
+    if (changed) {
+      this.layerSteps = steps;
+      this.port.postMessage({
+        type: "layersStep",
+        step: steps[0] || 0,
+        steps,
+      });
     }
   }
 
   voixSon(time) {
-    const sample = sampleFloatAudio(time, this.sequence, sampleRate);
-    this.setStep(sample.step);
+    const sample = sampleFloatLayers(time, this.layers, sampleRate);
+    this.setLayerSteps(sample.steps);
     return sample.value;
   }
 

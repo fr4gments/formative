@@ -7,6 +7,7 @@ import {
   renderAsciiFrame,
   renderColorAsciiFrame,
   visualStyleForProgram,
+  visualStyleForPrograms,
 } from "../src/engines/poc-animation.js";
 
 const program = {
@@ -53,6 +54,19 @@ const colorFrame = renderColorAsciiFrame({
 assert.equal(colorFrame.includes("<span"), false);
 assert.equal(colorFrame.split("\n").length, 2);
 
+const layeredFrame = renderAsciiFrame({
+  cols: 8,
+  rows: 3,
+  frame: 12,
+  programs: [
+    program,
+    { ...program, root: "s", suffixes: ["tx"] },
+  ],
+});
+
+assert.equal(layeredFrame.split("\n").length, 3);
+assert.equal(layeredFrame.split("\n")[0].length, 8);
+
 const style = visualStyleForProgram(program, 12);
 assert.equal(style["--ikal-a"].startsWith("rgb("), true);
 assert.equal(style["--ikal-b"].startsWith("rgb("), true);
@@ -71,6 +85,13 @@ assert.equal(style["--ikal-skew"].endsWith("deg"), true);
 assert.equal(Number(style["--ikal-contrast"]) > 1, true);
 assert.equal(Number(style["--ikal-saturate"]) > 1, true);
 assert.equal(Number(style["--ikal-band-alpha"]) > 0, true);
+
+const layeredStyle = visualStyleForPrograms([
+  program,
+  { ...program, root: "s", suffixes: ["tx"] },
+], 12);
+assert.equal(layeredStyle["--ikal-d"].startsWith("rgb("), true);
+assert.equal(Number(layeredStyle["--ikal-saturate"]) >= Number(style["--ikal-saturate"]), true);
 
 const styleCalls = [];
 applyVisualStyle({

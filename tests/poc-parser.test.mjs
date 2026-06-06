@@ -18,5 +18,20 @@ assert.equal(sequence.text, "kal ras sus");
 assert.equal(sequence.sequence.length, 3);
 assert.equal(sequence.sequence[2].root, "s");
 assert.equal(sequence.sequence[2].number, "MPX");
+assert.equal(sequence.layers.length, 1);
+assert.equal(sequence.layers[0].sequence, sequence.sequence);
+
+const layers = parseProgramme("kal ras\nsus-tx kul");
+assert.equal(layers.text, "kal ras\nsus-tx kul");
+assert.equal(layers.layers.length, 2);
+assert.equal(layers.layers[0].sequence.length, 2);
+assert.equal(layers.layers[1].sequence.length, 2);
+assert.equal(layers.layers[1].sequence[0].root, "s");
+assert.deepEqual(layers.layers[1].sequence[0].suffixes, ["tx"]);
+
+assert.equal(
+  parseProgramme("kal\nwat").error,
+  "ligne 2 : mot inconnu : « wat »",
+);
 
 console.log("poc-parser ok");

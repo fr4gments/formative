@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { createPocMusic, sampleBytebeat, sampleFloatAudio } from "../src/engines/poc-music.js";
+import { createPocMusic, sampleBytebeat, sampleFloatAudio, sampleFloatLayers } from "../src/engines/poc-music.js";
 import { effectsFromProgram } from "../src/engines/poc-float-audio.js";
 
 const kal = { root: "k", motion: "STA", number: "UPX", matter: "NRM", suffixes: [] };
@@ -33,6 +33,28 @@ assert.equal(floatSequence.step, 1);
 assert.equal(Number.isFinite(floatSequence.value), true);
 assert.equal(floatSequence.value >= -1 && floatSequence.value <= 1, true);
 
+const floatLayers = sampleFloatLayers(0.251, [
+  { sequence: [kal, ras] },
+  { sequence: [susTx] },
+], 44100);
+assert.equal(floatLayers.steps.length, 2);
+assert.deepEqual(floatLayers.steps, [1, 0]);
+assert.equal(Number.isFinite(floatLayers.value), true);
+assert.equal(floatLayers.value >= -1 && floatLayers.value <= 1, true);
+
+const oneLayer = sampleFloatLayers(0.1, [
+  { sequence: [kal] },
+], 44100);
+const oneSequence = sampleFloatAudio(0.1, [kal], 44100);
+assert.equal(oneLayer.value, oneSequence.value);
+assert.deepEqual(oneLayer.steps, [0]);
+
+const lockedLayers = sampleFloatLayers(0.251, [
+  { sequence: [kal] },
+  { sequence: [ras, susTx] },
+], 44100);
+assert.deepEqual(lockedLayers.steps, [0, 1]);
+
 assert.equal(
   sampleFloatAudio(0.1, [susTx], 44100).value,
   sampleFloatAudio(0.1, [susTx], 44100).value,
@@ -55,10 +77,20 @@ assert.equal(music.getVisualProgram(), null);
 
 music.setSequence([kal]);
 assert.equal(music.getVisualProgram(), kal);
+assert.deepEqual(music.getVisualPrograms(), [kal]);
 assert.equal(music.getCurrentStep(), 0);
+
+music.setLayers([
+  { sequence: [kal, ras], text: "kal ras" },
+  { sequence: [susTx], text: "sus-tx" },
+]);
+assert.deepEqual(music.getSequence(), [kal, ras]);
+assert.equal(music.getLayers().length, 2);
+assert.deepEqual(music.getVisualPrograms(), [kal, susTx]);
 
 music.clearSequence();
 assert.equal(music.getVisualProgram(), null);
+assert.deepEqual(music.getVisualPrograms(), []);
 
 const calls = [];
 const messages = [];
@@ -100,7 +132,10 @@ const workletMusic = createPocMusic({
   },
 });
 
-workletMusic.setSequence([kal, ras]);
+workletMusic.setLayers([
+  { sequence: [kal, ras], text: "kal ras" },
+  { sequence: [susTx], text: "sus-tx" },
+]);
 await workletMusic.start();
 
 assert.deepEqual(calls, [
@@ -110,7 +145,13 @@ assert.deepEqual(calls, [
   "resume",
 ]);
 assert.deepEqual(messages, [
-  { type: "setSequence", sequence: [kal, ras] },
+  {
+    type: "setLayers",
+    layers: [
+      { sequence: [kal, ras], text: "kal ras" },
+      { sequence: [susTx], text: "sus-tx" },
+    ],
+  },
 ]);
 
 console.log("poc-music ok");

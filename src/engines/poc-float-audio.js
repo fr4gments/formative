@@ -89,17 +89,17 @@ function clickTrain(time, period, offset, freq) {
   return bite * env;
 }
 
-function voiceClick(time, _localTime, p) {
+function voiceClick(time, localTime, p) {
   const count = countForNumber(p.number);
   const drift = p.motion === "DYN" ? Math.sin(time * TWO_PI * 0.42) * 0.035 : 0;
-  let out = clickTrain(time, 0.175 + drift, 0, 920);
+  let out = clickTrain(localTime, 0.175 + drift, 0, 920);
 
   if (count >= 2) {
-    out += clickTrain(time, 0.131, 0.047, 1260) * 0.75;
+    out += clickTrain(localTime, 0.131, 0.047, 1260) * 0.75;
   }
 
   if (count >= 3) {
-    out += clickTrain(time, 0.089, 0.083, 1680) * 0.55;
+    out += clickTrain(localTime, 0.089, 0.083, 1680) * 0.55;
   }
 
   return out * 0.8;
@@ -182,6 +182,11 @@ export function sampleFloatAudio(time, sequence, sampleRate = 44100) {
     return { value: clamp(value * GAIN, -1, 1), step: 0 };
   }
 
+  return sampleClockedSequence(time, sequence, sampleRate);
+}
+
+function sampleClockedSequence(time, sequence, sampleRate) {
+  const n = sequence.length;
   const step = Math.floor(time / STEP_SECONDS) % n;
   const localTime = time % STEP_SECONDS;
   const p = sequence[step];
@@ -190,5 +195,40 @@ export function sampleFloatAudio(time, sequence, sampleRate = 44100) {
   return {
     value: clamp(value * stepEnvelope(localTime) * GAIN, -1, 1),
     step,
+  };
+}
+
+function sequenceFromLayer(layer) {
+  return Array.isArray(layer) ? layer : layer.sequence || [];
+}
+
+export function sampleFloatLayers(time, layers, sampleRate = 44100) {
+  const sequences = layers
+    .map(sequenceFromLayer)
+    .filter((sequence) => sequence.length > 0);
+  const n = sequences.length;
+
+  if (n === 0) {
+    return { value: 0, step: 0, steps: [] };
+  }
+
+  if (n === 1) {
+    const sample = sampleFloatAudio(time, sequences[0], sampleRate);
+    return { ...sample, steps: [sample.step] };
+  }
+
+  let value = 0;
+  const steps = new Array(n);
+
+  for (let i = 0; i < n; i++) {
+    const sample = sampleClockedSequence(time, sequences[i], sampleRate);
+    value += sample.value;
+    steps[i] = sample.step;
+  }
+
+  return {
+    value: clamp(value / Math.sqrt(n), -1, 1),
+    step: steps[0] || 0,
+    steps,
   };
 }

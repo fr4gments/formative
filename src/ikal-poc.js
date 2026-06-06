@@ -6,6 +6,7 @@ import { parseProgramme } from "./parser/poc-parser.js";
 export function createIkalPocApp({
   cmd,
   readout,
+  runButton,
   screen,
   stillButton,
   parse = parseProgramme,
@@ -17,8 +18,22 @@ export function createIkalPocApp({
   const animation = createAnimation({
     screen,
     getProgram: music.getVisualProgram,
+    getPrograms: music.getVisualPrograms,
   });
   const image = createImage({ screen });
+
+  function statsForLayers(layers) {
+    return {
+      layerCount: layers.length,
+      wordCount: layers.reduce((sum, layer) => sum + layer.sequence.length, 0),
+    };
+  }
+
+  function firstProgramsForLayers(layers) {
+    return layers
+      .map((layer) => layer.sequence[0])
+      .filter(Boolean);
+  }
 
   function silence() {
     music.clearSequence();
@@ -41,21 +56,25 @@ export function createIkalPocApp({
       return;
     }
 
+    const layers = result.layers || [{ sequence: result.sequence, text: result.text }];
     animation.resume();
     Promise.resolve(music.start()).catch((error) => {
       readout.textContent = "✗ audio : " + error.message;
       readout.className = "err";
     });
-    music.setSequence(result.sequence);
+    music.setLayers(layers);
 
-    if (result.sequence.length === 1) {
+    if (layers.length === 1 && result.sequence.length === 1) {
       const p = result.sequence[0];
       const sfx = p.suffixes.length
         ? "   [" + p.suffixes.map((suffix) => "-" + suffix).join(" ") + "]"
         : "";
       readout.textContent = "▶ " + p.text + "   →   " + p.gloss + sfx;
-    } else {
+    } else if (layers.length === 1) {
       readout.textContent = "▶ " + result.text + "   ·   boucle de " + result.sequence.length + " pas";
+    } else {
+      const stats = statsForLayers(layers);
+      readout.textContent = "▶ " + stats.layerCount + " couches   ·   " + stats.wordCount + " mots superposés";
     }
 
     readout.className = "ok";
@@ -79,26 +98,37 @@ export function createIkalPocApp({
     animation.pause();
 
     const { cols, rows } = animation.getSize();
-    const program = result.sequence[0];
+    const layers = result.layers || [{ sequence: result.sequence, text: result.text }];
+    const programs = firstProgramsForLayers(layers);
 
     image.draw({
       cols,
       rows,
-      program,
+      programs,
     });
 
-    readout.textContent = "▣ image fixe : " + program.text + "   →   " + program.gloss;
+    if (programs.length === 1) {
+      readout.textContent = "▣ image fixe : " + programs[0].text + "   →   " + programs[0].gloss;
+    } else {
+      readout.textContent = "▣ image fixe : " + programs.length + " couches superposées";
+    }
+
     readout.className = "ok";
   }
 
   function start() {
     cmd.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         lance(cmd.value);
       } else if (event.key === "Escape") {
         silence();
       }
+    });
+
+    runButton?.addEventListener("click", () => {
+      lance(cmd.value);
+      cmd.focus();
     });
 
     stillButton?.addEventListener("click", () => {
@@ -122,6 +152,7 @@ export function startIkalPocApp(doc = document) {
   const app = createIkalPocApp({
     cmd: doc.getElementById("cmd"),
     readout: doc.getElementById("readout"),
+    runButton: doc.getElementById("run"),
     screen: doc.getElementById("screen"),
     stillButton: doc.getElementById("still"),
   });

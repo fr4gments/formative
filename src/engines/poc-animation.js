@@ -59,6 +59,26 @@ function colorToCss(color) {
   return "rgb(" + color[0] + "," + color[1] + "," + color[2] + ")";
 }
 
+function paletteForProgram(program) {
+  return program ? PALETTES[program.root] || PALETTES.rest : PALETTES.rest;
+}
+
+function accentForProgram(program) {
+  return program ? ACCENTS[program.root] || ACCENTS.rest : ACCENTS.rest;
+}
+
+function normalizePrograms(program, programs) {
+  const source = Array.isArray(programs)
+    ? programs
+    : Array.isArray(program)
+      ? program
+      : program
+        ? [program]
+        : [];
+
+  return source.filter(Boolean);
+}
+
 function hasSuffix(p, suffix) {
   return p.suffixes.includes(suffix);
 }
@@ -210,6 +230,21 @@ function glitchLine(line, y, f, p) {
   return out;
 }
 
+function pickLayerProgram(programs, x, y, f) {
+  if (programs.length === 0) {
+    return null;
+  }
+
+  if (programs.length === 1) {
+    return programs[0];
+  }
+
+  const band = Math.floor((x * 0.11 + y * 0.47 + f * 0.045) % programs.length);
+  const staticMix = Math.floor(bruit(x, y, f >> 3) * programs.length);
+  const tear = bruit(x + f, y, 307) > 0.86 ? 1 : 0;
+  return programs[(band + staticMix + tear) % programs.length];
+}
+
 function reposGlyphe(x, y, f) {
   return bruit(x, y, f >> 3) > 0.985 ? "·" : " ";
 }
@@ -254,7 +289,7 @@ export function glyphe(x, y, f, p) {
 }
 
 export function glyphColor(x, y, f, p) {
-  const palette = p ? PALETTES[p.root] || PALETTES.rest : PALETTES.rest;
+  const palette = paletteForProgram(p);
   const depth = p ? clamp(champVal(x, y, f, p), 0, 1) : bruit(x, y, f >> 3);
   const grad = clamp((x + y * 0.8) / 90 + depth * 0.65, 0, 1);
   const base = grad < 0.5
@@ -270,8 +305,8 @@ export function glyphColor(x, y, f, p) {
 }
 
 export function visualStyleForProgram(program, frame = 0) {
-  const palette = program ? PALETTES[program.root] || PALETTES.rest : PALETTES.rest;
-  const accent = program ? ACCENTS[program.root] || ACCENTS.rest : ACCENTS.rest;
+  const palette = paletteForProgram(program);
+  const accent = accentForProgram(program);
   const tx = program?.suffixes.includes("tx") ? 1 : 0;
   const sk = program?.suffixes.includes("šk") ? 1 : 0;
   const ghost = program?.matter === "RPV" ? 0.78 : 1;
@@ -323,8 +358,37 @@ export function visualStyleForProgram(program, frame = 0) {
   };
 }
 
+export function visualStyleForPrograms(programs, frame = 0) {
+  const clean = normalizePrograms(null, programs);
+
+  if (clean.length <= 1) {
+    return visualStyleForProgram(clean[0] || null, frame);
+  }
+
+  const primary = clean[frame % clean.length];
+  const secondary = clean[(frame + 1) % clean.length];
+  const tertiary = clean[(frame + 2) % clean.length];
+  const base = visualStyleForProgram(primary, frame);
+  const primaryPalette = paletteForProgram(primary);
+  const secondaryPalette = paletteForProgram(secondary);
+  const tertiaryPalette = paletteForProgram(tertiary);
+  const accent = accentForProgram(clean[clean.length - 1]);
+
+  return {
+    ...base,
+    "--ikal-a": colorToCss(primaryPalette[0]),
+    "--ikal-b": colorToCss(secondaryPalette[1]),
+    "--ikal-c": colorToCss(tertiaryPalette[2]),
+    "--ikal-d": colorToCss(mixColor(accent, secondaryPalette[2], 0.24)),
+    "--ikal-band-alpha": clamp(Number(base["--ikal-band-alpha"]) + clean.length * 0.055, 0, 0.72).toFixed(2),
+    "--ikal-saturate": clamp(Number(base["--ikal-saturate"]) + clean.length * 0.12, 1, 3.2).toFixed(2),
+  };
+}
+
 export function applyVisualStyle(screen, program, frame = 0) {
-  const style = visualStyleForProgram(program, frame);
+  const style = Array.isArray(program)
+    ? visualStyleForPrograms(program, frame)
+    : visualStyleForProgram(program, frame);
 
   for (const [name, value] of Object.entries(style)) {
     if (screen.style?.setProperty) {
@@ -336,27 +400,28 @@ export function applyVisualStyle(screen, program, frame = 0) {
   }
 }
 
-export function renderAsciiFrame({ cols, rows, frame, program }) {
+export function renderAsciiFrame({ cols, rows, frame, program, programs }) {
+  const activePrograms = normalizePrograms(program, programs);
   const lines = new Array(rows);
 
   for (let y = 0; y < rows; y++) {
     let line = "";
 
     for (let x = 0; x < cols; x++) {
-      line += glyphe(x, y, frame, program);
+      line += glyphe(x, y, frame, pickLayerProgram(activePrograms, x, y, frame));
     }
 
-    lines[y] = glitchLine(line, y, frame, program);
+    lines[y] = glitchLine(line, y, frame, pickLayerProgram(activePrograms, 0, y, frame));
   }
 
   return lines.join("\n");
 }
 
-export function renderColorAsciiFrame({ cols, rows, frame, program }) {
-  return renderAsciiFrame({ cols, rows, frame, program });
+export function renderColorAsciiFrame({ cols, rows, frame, program, programs }) {
+  return renderAsciiFrame({ cols, rows, frame, program, programs });
 }
 
-export function createPocAnimation({ screen, getProgram, win = window, doc = document }) {
+export function createPocAnimation({ screen, getProgram, getPrograms, win = window, doc = document }) {
   let cols = 80;
   let rows = 40;
   let frame = 0;
@@ -380,13 +445,15 @@ export function createPocAnimation({ screen, getProgram, win = window, doc = doc
   }
 
   function dessine() {
-    const program = getProgram();
-    applyVisualStyle(screen, program, frame);
+    const programs = typeof getPrograms === "function"
+      ? getPrograms()
+      : normalizePrograms(getProgram());
+    applyVisualStyle(screen, programs, frame);
     screen.textContent = renderAsciiFrame({
       cols,
       rows,
       frame,
-      program,
+      programs,
     });
   }
 

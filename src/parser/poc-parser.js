@@ -47,13 +47,7 @@ export function parseMot(token) {
   };
 }
 
-export function parseProgramme(str) {
-  const text = str.trim();
-
-  if (!text) {
-    return { stop: true };
-  }
-
+function parseSequence(text) {
   const sequence = [];
 
   for (const token of text.split(/\s+/)) {
@@ -66,5 +60,40 @@ export function parseProgramme(str) {
     sequence.push(result.prog);
   }
 
-  return { sequence, text };
+  return { sequence };
+}
+
+export function parseProgramme(str) {
+  const text = str.replace(/\r\n?/g, "\n").trim();
+
+  if (!text) {
+    return { stop: true };
+  }
+
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const layers = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const result = parseSequence(lines[i]);
+
+    if (result.error) {
+      return {
+        error: lines.length === 1 ? result.error : "ligne " + (i + 1) + " : " + result.error,
+      };
+    }
+
+    layers.push({
+      sequence: result.sequence,
+      text: lines[i],
+    });
+  }
+
+  return {
+    layers,
+    sequence: layers[0].sequence,
+    text: lines.join("\n"),
+  };
 }
