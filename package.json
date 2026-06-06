@@ -1,0 +1,10 @@
+{
+  "name": "formative",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node tests/poc-parser.test.mjs && node tests/poc-animation.test.mjs && node tests/poc-image.test.mjs && node tests/poc-music.test.mjs && node tests/ikal-poc.test.mjs",
+    "serve": "python -m http.server 8000"
+  }
+}

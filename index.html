@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKAL</title>
+<style>
+  :root { --vert: #7CFC6A; --vert-sombre: #4a7a44; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #050805; overflow: hidden; }
+  body {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, rgba(0,0,0,0) 1px 4px),
+      linear-gradient(135deg, #020405 0%, #050805 42%, #080509 100%);
+  }
+
+  #screen {
+    font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
+    font-size: 15px; line-height: 1; letter-spacing: 0;
+    white-space: pre; user-select: none; contain: content;
+    --ikal-a: #00f0ff; --ikal-b: #ff2fb3; --ikal-c: #d7ff34;
+    --ikal-glow: rgba(124,252,106,0.7); --ikal-shift: 0%;
+    --ikal-red-x: 1px; --ikal-cyan-x: -1px; --ikal-skew: 0deg;
+    --ikal-contrast: 1.15; --ikal-saturate: 1.35; --ikal-scan: 0.18;
+    background-image:
+      repeating-linear-gradient(180deg, rgba(255,255,255,var(--ikal-scan)) 0 1px, rgba(0,0,0,0) 1px 3px),
+      repeating-linear-gradient(90deg, rgba(255,47,179,0) 0 19px, rgba(255,47,179,0.34) 20px 21px, rgba(0,239,255,0.22) 22px 23px, rgba(0,0,0,0) 24px 43px),
+      linear-gradient(115deg, var(--ikal-a) 0%, var(--ikal-b) 42%, var(--ikal-c) 68%, #ffffff 100%);
+    background-size: 100% 6px, 54px 100%, 185% 185%;
+    background-position: 0 0, var(--ikal-shift) 0, var(--ikal-shift) 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow:
+      var(--ikal-red-x) 0 0 rgba(255,47,179,0.62),
+      var(--ikal-cyan-x) 0 0 rgba(0,239,255,0.54),
+      0 0 7px var(--ikal-glow);
+    filter: saturate(var(--ikal-saturate)) contrast(var(--ikal-contrast));
+    transform: skewX(var(--ikal-skew));
+    transform-origin: left top;
+  }
+
+  #hud {
+    position: fixed; top: 0; left: 0; right: 0; padding: 12px 16px;
+    background: linear-gradient(180deg, rgba(5,8,5,0.92), rgba(5,8,5,0));
+    font-family: "DejaVu Sans Mono", monospace; color: var(--vert);
+    pointer-events: none;
+  }
+  #title   { font-size: 22px; font-weight: bold; letter-spacing: 3px; }
+  #readout { font-size: 14px; margin-top: 4px; min-height: 18px; color: #8aa888; }
+  #readout.ok  { color: #bdf5b0; }
+  #readout.err { color: #ff6b6b; }
+  #help { font-size: 12px; color: #6a826a; margin-top: 6px; }
+  #note { font-size: 11px; color: #576a57; margin-top: 2px; }
+
+  #prompt {
+    position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px;
+    background: linear-gradient(0deg, rgba(5,8,5,0.96), rgba(5,8,5,0));
+    font-family: "DejaVu Sans Mono", monospace;
+    display: flex; gap: 10px; align-items: center;
+  }
+  #prompt .chev { color: var(--vert); font-weight: bold; font-size: 18px; }
+  #cmd {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--vert); font-family: inherit; font-size: 18px; caret-color: var(--vert);
+  }
+  #cmd::placeholder { color: #3f6a3a; }
+  #still {
+    background: rgba(124,252,106,0.08); border: 1px solid #426d3d;
+    color: var(--vert); font-family: inherit; font-size: 13px;
+    padding: 7px 10px; cursor: pointer;
+  }
+  #still:hover { background: rgba(124,252,106,0.16); border-color: var(--vert); }
+</style>
+</head>
+<body>
+  <div id="hud">
+    <div id="title">IKAL</div>
+    <div id="readout">tape un mot (ou plusieurs), puis Entrée…</div>
+    <div id="help">mots : <b>kal · ras · sus · kul · sal · rur</b> &nbsp;·&nbsp; suffixes : <b>-tx · -sk</b> &nbsp;·&nbsp; <b>plusieurs mots = une boucle</b> (ex : <b>kal ras kal sus</b>)</div>
+    <div id="note">🔊 baisse un peu le son · Entrée = lancer · Échap = silence · (sus/rur/sk = suš/ruř/šk au clavier · le 1er Entrée démarre l'audio)</div>
+  </div>
+
+  <pre id="screen"></pre>
+
+  <div id="prompt">
+    <span class="chev">›</span>
+    <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="kal ras kal sus" autofocus>
+    <button id="still" type="button" title="Générer une image fixe avec le texte saisi">image fixe</button>
+  </div>
+
+<script type="module">
+import { startIkalPocApp } from "./src/ikal-poc.js";
+
+startIkalPocApp();
+</script>
+</body>
+</html>

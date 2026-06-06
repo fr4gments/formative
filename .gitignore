@@ -1,0 +1,9 @@
+node_modules/
+.venv/
+.idea/
+
+CLAUDE.md
+ROADMAP.md
+
+*.log
+.DS_Store
