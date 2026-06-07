@@ -1,5 +1,6 @@
 import { parseIthkuilWord } from "./ithkuil-adapter.js";
 import { seedRootForIthkuil } from "./ithkuil-seed-roots.js";
+import { paramsForIthkuilWord } from "./ithkuil-to-params.js";
 
 function diagnostic({ code, line, message, severity = "warning", token }) {
   return {
@@ -26,7 +27,10 @@ export function analyzeIthkuilToken(token, line = 1) {
 
   const ithkuil = parsed.ithkuil;
   const diagnostics = [];
+  let baseParams = null;
   const seedRoot = seedRootForIthkuil(ithkuil);
+  let params = null;
+  let userParams = {};
 
   if (ithkuil.type !== "formative") {
     diagnostics.push(diagnostic({
@@ -42,15 +46,31 @@ export function analyzeIthkuilToken(token, line = 1) {
       message: "forme Ithkuil valide, mais racine non encore mappée par IKAL : root=" + ithkuil.root,
       token,
     }));
+  } else {
+    const paramsResult = paramsForIthkuilWord({ ithkuil, seedRoot });
+
+    baseParams = paramsResult.baseParams;
+    params = paramsResult.params;
+    userParams = paramsResult.userParams;
+    diagnostics.push(...paramsResult.diagnostics.map((item) => diagnostic({
+      code: item.code,
+      line,
+      message: item.message,
+      severity: item.severity,
+      token,
+    })));
   }
 
   return {
     diagnostics,
     word: {
+      baseParams,
       diagnostics,
       ithkuil,
+      params,
       seedRoot: seedRoot || null,
       text: token,
+      userParams,
     },
   };
 }

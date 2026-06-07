@@ -139,4 +139,37 @@ assert.equal(readout.className, "");
 assert.equal(readout.textContent, "— silence —");
 assert.deepEqual(calls.slice(-2), ["clear", "animation-resume"]);
 
+const realCalls = [];
+const realReadout = createElementStub();
+const realApp = createIkalPocApp({
+  cmd: createElementStub(),
+  readout: realReadout,
+  runButton: createElementStub(),
+  screen: createElementStub(),
+  stillButton: createElementStub(),
+  createMusic: () => ({
+    clearSequence: () => realCalls.push("clear"),
+    getVisualProgram: () => null,
+    getVisualPrograms: () => [],
+    setLayers: (nextLayers) => realCalls.push(["layers", nextLayers]),
+    start: () => realCalls.push("music-start"),
+  }),
+  createAnimation: () => ({
+    getSize: () => ({ cols: 12, rows: 5 }),
+    pause: () => realCalls.push("animation-pause"),
+    resume: () => realCalls.push("animation-resume"),
+    start: () => realCalls.push("animation-start"),
+  }),
+  createImage: () => ({
+    draw: ({ programs }) => realCalls.push(["image-draw", programs]),
+  }),
+});
+
+realApp.lance("ļtala alxrasa\načxwuža pswatļa");
+assert.equal(realReadout.className, "ok");
+assert.equal(realReadout.textContent, "▶ 2 couches   ·   4 mots superposés");
+assert.equal(realCalls[2][0], "layers");
+assert.equal(realCalls[2][1][0].sequence[0].params.family, "click");
+assert.equal(realCalls[2][1][1].sequence[0].params.family, "noise");
+
 console.log("ikal-poc ok");

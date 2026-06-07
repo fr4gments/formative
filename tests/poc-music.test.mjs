@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import { createPocMusic, sampleBytebeat, sampleFloatAudio, sampleFloatLayers } from "../src/engines/poc-music.js";
 import { effectsFromProgram } from "../src/engines/poc-float-audio.js";
+import { parseIkalProgram } from "../src/parser/ikal-parser.js";
 
 const kal = { root: "k", motion: "STA", number: "UPX", matter: "NRM", suffixes: [] };
 const ras = { root: "r", motion: "STA", number: "DPX", matter: "NRM", suffixes: [] };
@@ -71,6 +72,24 @@ assert.equal(effectsFromProgram(susTx).bitcrushAmount > effectsFromProgram(kal).
 assert.equal(effectsFromProgram(susTx).jitterAmount > effectsFromProgram(kal).jitterAmount, true);
 assert.equal(effectsFromProgram(kulGhost).ghostAmount > effectsFromProgram(kal).ghostAmount, true);
 assert.equal(effectsFromProgram(rasCrushFold).driveAmount > effectsFromProgram(susTx).driveAmount, true);
+
+const ikalSequence = parseIkalProgram("ļtala alxrasa ačxwuža").sequence;
+assert.equal(ikalSequence.length, 3);
+assert.equal(Number.isFinite(sampleFloatAudio(0.1, [ikalSequence[0]], 44100).value), true);
+assert.equal(Number.isFinite(sampleFloatAudio(0.251, ikalSequence, 44100).value), true);
+assert.equal(Number.isInteger(sampleBytebeat(100, [ikalSequence[0]]).value), true);
+
+const ikalLayers = parseIkalProgram("ļtala alxrasa\načxwuža pswatļa").layers;
+const ikalLayeredSample = sampleFloatLayers(0.251, ikalLayers, 44100);
+assert.deepEqual(ikalLayeredSample.steps, [1, 1]);
+assert.equal(Number.isFinite(ikalLayeredSample.value), true);
+
+const tearEffects = effectsFromProgram(parseIkalProgram("sčala").sequence[0]);
+assert.equal(tearEffects.bitcrushAmount > 0.5, true);
+assert.equal(tearEffects.jitterAmount > 0.5, true);
+
+const distortionEffects = effectsFromProgram(parseIkalProgram("affrala").sequence[0]);
+assert.equal(distortionEffects.driveAmount > 0.7, true);
 
 const music = createPocMusic({ win: {} });
 assert.equal(music.getVisualProgram(), null);

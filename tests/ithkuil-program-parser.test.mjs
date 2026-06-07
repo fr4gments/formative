@@ -10,17 +10,30 @@ assert.equal(mapped.word.text, "alkala");
 assert.equal(mapped.word.ithkuil.type, "formative");
 assert.equal(mapped.word.ithkuil.root, "lk");
 assert.equal(mapped.word.seedRoot.family, "music");
+assert.deepEqual(mapped.word.userParams, {});
+assert.deepEqual(mapped.word.params, mapped.word.baseParams);
+assert.equal(mapped.word.params.role, "mode");
+assert.equal(mapped.word.params.mode, "music");
 assert.deepEqual(mapped.diagnostics, []);
 
 const dynamicVisual = analyzeIthkuilToken("lyula");
 assert.equal(dynamicVisual.word.ithkuil.root, "ly");
 assert.equal(dynamicVisual.word.ithkuil.function, "DYN");
 assert.equal(dynamicVisual.word.seedRoot.domain, "animation");
+assert.equal(dynamicVisual.word.params.motion.kind, "dynamic");
+
+const migrated = analyzeIthkuilToken("alxružla");
+assert.equal(migrated.word.seedRoot.family, "ghost-roll-cloud");
+assert.equal(migrated.word.params.family, "roll");
+assert.equal(migrated.word.params.multiplicity.configuration, "MFC");
+assert.equal(migrated.word.params.representation.essence, "RPV");
 
 const unmapped = analyzeIthkuilToken("kšala");
 assert.equal(unmapped.error, undefined);
 assert.equal(unmapped.word.ithkuil.root, "kš");
 assert.equal(unmapped.word.seedRoot, null);
+assert.equal(unmapped.word.baseParams, null);
+assert.equal(unmapped.word.params, null);
 assert.equal(unmapped.diagnostics.length, 1);
 assert.equal(unmapped.diagnostics[0].code, "unmapped-root");
 assert.equal(
@@ -32,6 +45,8 @@ const referential = analyzeIthkuilToken("royež");
 assert.equal(referential.error, undefined);
 assert.equal(referential.word.ithkuil.type, "referential");
 assert.equal(referential.word.seedRoot, null);
+assert.equal(referential.word.baseParams, null);
+assert.equal(referential.word.params, null);
 assert.equal(referential.diagnostics[0].code, "unsupported-word-type");
 
 assert.equal(

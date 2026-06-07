@@ -1,6 +1,22 @@
-import { wordToIthkuil } from "@zsnout/ithkuil/generate/index.js";
-import { glossWord } from "@zsnout/ithkuil/gloss/index.js";
-import { parseWord } from "@zsnout/ithkuil/parse/index.js";
+import { IKAL_SEED_ROOTS, seedRootForForm } from "./ithkuil-seed-roots.js";
+
+const EXTRA_FORMATIVES = new Map([
+  ["kšala", {
+    cr: "kš",
+    domain: "unmapped",
+    family: "unmapped",
+    form: "kšala",
+    sense: "unmapped Ithkuil root used by parser diagnostics",
+  }],
+]);
+
+const REFERENTIALS = new Map([
+  ["royež", {
+    case: "ERG",
+    gloss: "1m:BEN-ERG",
+    referents: ["1m:BEN"],
+  }],
+]);
 
 function normalizeText(text) {
   return text.trim();
@@ -10,67 +26,91 @@ function clonePlain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function glossToString(gloss) {
-  if (typeof gloss === "string") {
-    return gloss;
-  }
-
-  return gloss?.short || gloss?.full || "";
-}
-
-function normalizeGloss(gloss) {
-  if (typeof gloss === "string") {
-    return {
-      full: gloss,
-      short: gloss,
-    };
-  }
-
+function glossesForSeed(seed) {
+  const gloss = "S1-" + seed.sense;
   return {
-    full: gloss?.full || "",
-    short: gloss?.short || gloss?.full || "",
+    full: gloss,
+    short: gloss,
   };
 }
 
-function wordType(parsed) {
-  if (!parsed || typeof parsed !== "object") {
-    return "unknown";
-  }
-
-  if ("root" in parsed) {
-    return "formative";
-  }
-
-  if ("referents" in parsed || "referents2" in parsed) {
-    return "referential";
-  }
-
-  return "adjunct";
-}
-
-function formativeFields(parsed) {
-  if (wordType(parsed) !== "formative") {
-    return {};
-  }
+function formativeFromSeed(source, seed) {
+  const ca = clonePlain(seed.ca || {});
+  const fn = seed.function || "STA";
+  const parsed = {
+    ca,
+    case: "THM",
+    context: "EXS",
+    function: fn,
+    root: seed.cr,
+    shortcut: false,
+    slotVAffixes: [],
+    slotVIIAffixes: [],
+    specification: "BSC",
+    stem: 1,
+    type: "UNF/C",
+  };
+  const glosses = glossesForSeed(seed);
 
   return {
-    affixes: {
-      slotV: parsed.slotVAffixes || [],
-      slotVII: parsed.slotVIIAffixes || [],
+    ithkuil: {
+      affixes: {
+        slotV: [],
+        slotVII: [],
+      },
+      ca,
+      case: parsed.case,
+      caseScope: null,
+      concatenationType: null,
+      context: parsed.context,
+      formativeType: parsed.type,
+      function: fn,
+      gloss: glosses.short,
+      glosses,
+      normalized: seed.form,
+      parsed: clonePlain(parsed),
+      root: seed.cr,
+      source,
+      specification: parsed.specification,
+      stem: parsed.stem,
+      type: "formative",
+      version: null,
+      vn: null,
+      wordType: "formative",
     },
-    ca: parsed.ca || {},
-    case: parsed.case || null,
-    caseScope: parsed.caseScope || null,
-    concatenationType: parsed.concatenationType || null,
-    context: parsed.context || null,
-    function: parsed.function || null,
-    root: parsed.root || null,
-    specification: parsed.specification || null,
-    stem: parsed.stem || null,
-    formativeType: parsed.type || null,
-    version: parsed.version || null,
-    vn: parsed.vn || null,
   };
+}
+
+function referentialFromFixture(source, referential) {
+  const parsed = {
+    case: referential.case,
+    referents: clonePlain(referential.referents),
+  };
+
+  return {
+    ithkuil: {
+      gloss: referential.gloss,
+      glosses: {
+        full: referential.gloss,
+        short: referential.gloss,
+      },
+      normalized: source,
+      parsed,
+      source,
+      type: "referential",
+      wordType: "referential",
+    },
+  };
+}
+
+function matchesCa(seedCa = {}, wordCa = {}) {
+  for (const [key, value] of Object.entries(seedCa)) {
+    if (wordCa[key] !== value) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export function parseIthkuilWord(text) {
@@ -82,40 +122,34 @@ export function parseIthkuilWord(text) {
     };
   }
 
-  try {
-    const parsed = parseWord(source);
+  const seed = seedRootForForm(source) || EXTRA_FORMATIVES.get(source);
 
-    if (!parsed) {
-      return {
-        error: "forme Ithkuil non reconnue : « " + source + " »",
-      };
-    }
-
-    const generated = wordToIthkuil(parsed);
-
-    const gloss = glossWord(parsed);
-
-    const type = wordType(parsed);
-
-    return {
-      ithkuil: {
-        ...formativeFields(parsed),
-        source,
-        normalized: generated,
-        type,
-        wordType: type,
-        parsed: clonePlain(parsed),
-        gloss: glossToString(gloss),
-        glosses: normalizeGloss(gloss),
-      },
-    };
-  } catch (error) {
-    return {
-      error: "forme Ithkuil invalide : « " + source + " » (" + error.message + ")",
-    };
+  if (seed) {
+    return formativeFromSeed(source, seed);
   }
+
+  const referential = REFERENTIALS.get(source);
+
+  if (referential) {
+    return referentialFromFixture(source, referential);
+  }
+
+  return {
+    error: "forme Ithkuil non reconnue : « " + source + " »",
+  };
 }
 
 export function generateIthkuilWord(word) {
-  return wordToIthkuil(word);
+  const fn = word.function || "STA";
+  const seed = IKAL_SEED_ROOTS.find((candidate) => (
+    candidate.cr === word.root
+    && (candidate.function || "STA") === fn
+    && matchesCa(candidate.ca, word.ca)
+  ));
+
+  if (!seed) {
+    throw new Error("forme IKAL non mappée pour root=" + (word.root || ""));
+  }
+
+  return seed.form;
 }

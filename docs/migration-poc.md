@@ -9,13 +9,15 @@ Cette table sert a remplacer progressivement les anciennes etiquettes par des mo
 | Mot POC | Fonction POC | Remplacement IKAL candidat | Justification |
 | --- | --- | --- | --- |
 | `kal` | clic statique, net, unitaire | `ļtala` | racine `ļt` : ticking/clicking/tapping sound |
-| `sus` | bruit dynamique dense | `ačxwala` | racine `čxw` : raucous sound/noise |
-| `ras` | roulement statique / duo | a choisir | chercher une racine liee au roulement sonore ou au roulement/mouvement |
-| `rur` | roulement dynamique dense / fantome | a choisir | meme famille que `ras`, mais avec categories Ithkuil motivant dynamique / multiplicite / representation |
-| `kul` | clic dynamique fantome | `ļtala` + categorie a definir | meme racine que clic, mais dynamique / representation doivent venir de la morphologie |
-| `sal` | bruit/souffle statique fantome | `ačxwala` ou autre racine souffle | racine bruit probable, mais le caractere souffle/fantome doit etre precise |
-| `-tx` | dechirement / bitcrush / glitch | `sčala` ou affixe Ithkuil a choisir | racine `sč` : break apart/break into pieces/crumble |
-| `-sk` | saturation / repli | affixe ou mot a choisir | ne doit pas rester un suffixe invente |
+| `ras` | roulement statique / duo | `alxrasa` | racine `lxr` : roll/wheeling/winding, avec Ca `DPX` pour le duo |
+| `suš` / `sus` | bruit dynamique dense | `ačxwuža` | racine `čxw` : raucous sound/noise, avec Function `DYN` et Ca `MFC` pour une masse dynamique |
+| `kul` | clic dynamique fantome | `ļtutļa` | racine `ļt`, avec Function `DYN` et Ca essence `RPV` |
+| `sal` | souffle statique fantome | `pswatļa` | racine `psw` : respiration/breathing, avec Ca essence `RPV` |
+| `ruř` / `rur` | roulement dynamique dense / fantome | `alxružla` | racine `lxr`, avec Function `DYN`, Ca `MFC` et essence `RPV` |
+| `-tx` | dechirement / bitcrush / glitch | `sčala` | racine `sč` : break apart/break into pieces/crumble |
+| `-šk` / `-sk` | saturation / repli / distorsion | `affrala` | racine `ffr` : bending/distortion/twisting/warping |
+
+Les deux anciens suffixes POC sont listes avec un tiret parce qu'ils viennent de l'ancien parseur. Leur remplacement IKAL est une forme-mot candidate ; la syntaxe finale des effets composes sera decidee dans l'etape mapping / orchestration.
 
 ## Regle de migration
 

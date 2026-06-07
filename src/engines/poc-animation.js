@@ -1,3 +1,5 @@
+import { legacyProgramView } from "./program-view.js";
+
 const ECHELLE_NET = " .·:-=+*oO#%▓█";
 const ECHELLE_GHOST = "  .·:░▒  .· ";
 const GLITCH_CHARS = "░▒▓█#%@&/\\|!?<>[]{}";
@@ -60,11 +62,13 @@ function colorToCss(color) {
 }
 
 function paletteForProgram(program) {
-  return program ? PALETTES[program.root] || PALETTES.rest : PALETTES.rest;
+  const view = legacyProgramView(program);
+  return view ? PALETTES[view.root] || PALETTES.rest : PALETTES.rest;
 }
 
 function accentForProgram(program) {
-  return program ? ACCENTS[program.root] || ACCENTS.rest : ACCENTS.rest;
+  const view = legacyProgramView(program);
+  return view ? ACCENTS[view.root] || ACCENTS.rest : ACCENTS.rest;
 }
 
 function normalizePrograms(program, programs) {
@@ -80,7 +84,7 @@ function normalizePrograms(program, programs) {
 }
 
 function hasSuffix(p, suffix) {
-  return p.suffixes.includes(suffix);
+  return legacyProgramView(p)?.suffixes.includes(suffix) || false;
 }
 
 function glitchLevel(p) {
@@ -88,21 +92,22 @@ function glitchLevel(p) {
     return 0;
   }
 
-  let level = p.motion === "DYN" ? 0.16 : 0.03;
+  const view = legacyProgramView(p);
+  let level = view.motion === "DYN" ? 0.16 : 0.03;
 
-  if (p.number === "DPX") {
+  if (view.number === "DPX") {
     level += 0.08;
-  } else if (p.number === "MPX") {
+  } else if (view.number === "MPX") {
     level += 0.16;
   }
 
-  if (p.root === "s") {
+  if (view.root === "s") {
     level += 0.08;
-  } else if (p.root === "r") {
+  } else if (view.root === "r") {
     level += 0.05;
   }
 
-  if (p.matter === "RPV") {
+  if (view.matter === "RPV") {
     level += 0.09;
   }
 
@@ -123,30 +128,33 @@ function pickGlitchChar(x, y, f) {
 }
 
 function champBruit(x, y, f, p) {
-  const move = p.motion === "DYN" ? f * 0.06 : 0;
+  const view = legacyProgramView(p);
+  const move = view.motion === "DYN" ? f * 0.06 : 0;
   const onde = Math.sin(x * 0.25 + move) +
     Math.sin(y * 0.30 - move * 0.8) +
     Math.sin((x + y) * 0.15 + move * 1.2);
-  const grain = bruit(x, y, p.motion === "DYN" ? f >> 1 : 0);
-  const dose = p.number === "MPX" ? 0.35 : p.number === "DPX" ? 0.22 : 0.10;
+  const grain = bruit(x, y, view.motion === "DYN" ? f >> 1 : 0);
+  const dose = view.number === "MPX" ? 0.35 : view.number === "DPX" ? 0.22 : 0.10;
   return ((onde + 3) / 6) * (1 - dose) + grain * dose;
 }
 
 function champClic(x, y, f, p) {
+  const view = legacyProgramView(p);
   const periode = 20;
-  const ph = p.motion === "DYN" ? f % periode : 6;
+  const ph = view.motion === "DYN" ? f % periode : 6;
   const eclat = Math.max(0, periode * 0.35 - ph) / (periode * 0.35);
-  const densite = p.number === "MPX" ? 0.14 : p.number === "DPX" ? 0.05 : 0.02;
+  const densite = view.number === "MPX" ? 0.14 : view.number === "DPX" ? 0.05 : 0.02;
   return bruit(x, y, 7) < densite ? 0.2 + 0.8 * eclat : 0.0;
 }
 
 function champRoulement(x, y, f, p) {
-  const move = p.motion === "DYN" ? f * 0.28 : 0;
+  const view = legacyProgramView(p);
+  const move = view.motion === "DYN" ? f * 0.28 : 0;
   let v = 0.5 + 0.5 * Math.sin((x + move) * 0.45);
 
-  if (p.number === "DPX") {
+  if (view.number === "DPX") {
     v = 0.5 * v + 0.5 * (0.5 + 0.5 * Math.sin((y - move) * 0.40));
-  } else if (p.number === "MPX") {
+  } else if (view.number === "MPX") {
     v = (v +
       (0.5 + 0.5 * Math.sin((x + y - move) * 0.30)) +
       (0.5 + 0.5 * Math.sin((y + move) * 0.5))) / 3;
@@ -156,13 +164,14 @@ function champRoulement(x, y, f, p) {
 }
 
 function champVal(x, y, f, p) {
-  let v = p.root === "s"
+  const view = legacyProgramView(p);
+  let v = view.root === "s"
     ? champBruit(x, y, f, p)
-    : p.root === "k"
+    : view.root === "k"
       ? champClic(x, y, f, p)
       : champRoulement(x, y, f, p);
 
-  for (const suffix of p.suffixes) {
+  for (const suffix of view.suffixes) {
     if (suffix === "tx" && ((bruit(x, y, f) * 8) | 0) === 0) {
       v = 1 - v;
     } else if (suffix === "šk") {
@@ -255,10 +264,11 @@ export function glyphe(x, y, f, p) {
   }
 
   let v = champVal(x, y, f, p);
+  const view = legacyProgramView(p);
   v = Math.max(0, Math.min(1, v));
   v = Math.pow(v, hasSuffix(p, "šk") ? 0.86 : 1.18);
 
-  const ech = p.matter === "RPV" ? ECHELLE_GHOST : ECHELLE_NET;
+  const ech = view.matter === "RPV" ? ECHELLE_GHOST : ECHELLE_NET;
   let i = Math.floor(v * ech.length);
 
   if (i < 0) {
@@ -281,7 +291,7 @@ export function glyphe(x, y, f, p) {
     return "█";
   }
 
-  if (p.motion === "DYN" && bruit(x, y, f) > 0.975) {
+  if (view.motion === "DYN" && bruit(x, y, f) > 0.975) {
     return pickGlitchChar(y, x, f);
   }
 
@@ -289,13 +299,14 @@ export function glyphe(x, y, f, p) {
 }
 
 export function glyphColor(x, y, f, p) {
+  const view = legacyProgramView(p);
   const palette = paletteForProgram(p);
   const depth = p ? clamp(champVal(x, y, f, p), 0, 1) : bruit(x, y, f >> 3);
   const grad = clamp((x + y * 0.8) / 90 + depth * 0.65, 0, 1);
   const base = grad < 0.5
     ? mixColor(palette[0], palette[1], grad * 2)
     : mixColor(palette[1], palette[2], (grad - 0.5) * 2);
-  const ghost = p?.matter === "RPV" ? 0.58 : 1;
+  const ghost = view?.matter === "RPV" ? 0.58 : 1;
 
   return [
     Math.round(base[0] * ghost),
@@ -305,22 +316,23 @@ export function glyphColor(x, y, f, p) {
 }
 
 export function visualStyleForProgram(program, frame = 0) {
+  const view = legacyProgramView(program);
   const palette = paletteForProgram(program);
   const accent = accentForProgram(program);
-  const tx = program?.suffixes.includes("tx") ? 1 : 0;
-  const sk = program?.suffixes.includes("šk") ? 1 : 0;
-  const ghost = program?.matter === "RPV" ? 0.78 : 1;
+  const tx = view?.suffixes.includes("tx") ? 1 : 0;
+  const sk = view?.suffixes.includes("šk") ? 1 : 0;
+  const ghost = view?.matter === "RPV" ? 0.78 : 1;
   const level = glitchLevel(program);
   const pulse = bruit(frame, frame >> 2, 211);
   const jitter = pulse > 0.82 ? level : level * 0.22;
-  const rootTilt = program?.root === "k" ? -22 : program?.root === "s" ? 18 : 6;
+  const rootTilt = view?.root === "k" ? -22 : view?.root === "s" ? 18 : 6;
   const hot = mixColor(palette[1], palette[2], sk ? 0.94 : 0.54);
   const edge = mixColor(accent, palette[2], tx ? 0.12 : sk ? 0.28 : 0.42);
-  const speed = program?.motion === "DYN"
+  const speed = view?.motion === "DYN"
     ? 2.35 + level * 2.2 + tx * 1.15
     : 0.52 + level * 0.65;
   const shift = ((frame * speed) % 140 - 20).toFixed(2) + "%";
-  const drift = ((frame * (program?.motion === "DYN" ? 1.35 + level : 0.28)) % 120 - 10).toFixed(2) + "%";
+  const drift = ((frame * (view?.motion === "DYN" ? 1.35 + level : 0.28)) % 120 - 10).toFixed(2) + "%";
   const angle = (105 + rootTilt + Math.sin(frame * 0.045) * (8 + level * 22)).toFixed(2) + "deg";
   const stopA = (13 + pulse * 9).toFixed(2) + "%";
   const stopB = (34 + level * 12 + pulse * 8).toFixed(2) + "%";

@@ -8,6 +8,7 @@ nav:
       - Syntaxe: syntaxe.md
       - Vocabulaire: mots.md
       - Migration POC: migration-poc.md
+      - Paramètres artistiques: params.md
       - Notes techniques: langage.md
 theme:
   name: mkdocs

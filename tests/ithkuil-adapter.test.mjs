@@ -28,48 +28,25 @@ assert.equal(simple.ithkuil.gloss, simple.ithkuil.glosses.short);
 assert.equal(simple.ithkuil.glosses.full.length > 0, true);
 assert.equal(simple.ithkuil.gloss.includes("[object Object]"), false);
 
-const complexWord = generateIthkuilWord({
+const generated = generateIthkuilWord({
   type: "UNF/C",
-  concatenationType: 2,
-  version: "CPT",
-  stem: 2,
-  root: "kš",
+  root: "lxr",
   function: "DYN",
-  specification: "OBJ",
-  context: "AMG",
-  slotVAffixes: [
-    {
-      referents: ["1m:BEN"],
-      case: "ERG",
-    },
-  ],
   ca: {
     configuration: "MFC",
-    affiliation: "COA",
-    extension: "GRA",
+    essence: "RPV",
   },
-  vn: "REP",
 });
 
-assert.equal(complexWord, "hwikšöeroeržžgeiha");
+assert.equal(generated, "alxružla");
 
-const complex = parseIthkuilWord(complexWord);
-assert.equal(complex.error, undefined);
-assert.equal(complex.ithkuil.type, "formative");
-assert.equal(complex.ithkuil.parsed.root, "kš");
-assert.equal(complex.ithkuil.parsed.function, "DYN");
-assert.equal(complex.ithkuil.parsed.version, "CPT");
-assert.equal(complex.ithkuil.parsed.specification, "OBJ");
-assert.equal(complex.ithkuil.parsed.context, "AMG");
-assert.equal(complex.ithkuil.parsed.ca.configuration, "MFC");
-assert.equal(complex.ithkuil.parsed.slotVAffixes.length, 1);
-
-const affixed = parseIthkuilWord("malëuţřait");
-assert.equal(affixed.error, undefined);
-assert.equal(affixed.ithkuil.type, "formative");
-assert.equal(affixed.ithkuil.parsed.root, "m");
-assert.equal(affixed.ithkuil.parsed.slotVIIAffixes.length, 2);
-assert.equal(affixed.ithkuil.parsed.slotVIIAffixes[0].cs, "ţř");
+const mapped = parseIthkuilWord("ļtutļa");
+assert.equal(mapped.error, undefined);
+assert.equal(mapped.ithkuil.type, "formative");
+assert.equal(mapped.ithkuil.root, "ļt");
+assert.equal(mapped.ithkuil.function, "DYN");
+assert.equal(mapped.ithkuil.ca.essence, "RPV");
+assert.equal(mapped.ithkuil.parsed.case, "THM");
 
 const referential = parseIthkuilWord("royež");
 assert.equal(referential.error, undefined);

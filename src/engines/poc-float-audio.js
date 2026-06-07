@@ -1,3 +1,5 @@
+import { legacyProgramView } from "./program-view.js";
+
 export const STEP_SECONDS = 0.25;
 export const GAIN = 0.22;
 
@@ -29,12 +31,26 @@ function fold(value) {
 }
 
 export function effectsFromProgram(p) {
-  let bitcrushAmount = p.matter === "RPV" ? 0.22 : 0;
-  let driveAmount = p.matter === "RPV" ? 0.12 : 0;
-  let jitterAmount = p.motion === "DYN" ? 0.04 : 0;
-  let ghostAmount = p.matter === "RPV" ? 0.45 : 0;
+  const view = legacyProgramView(p);
 
-  for (const suffix of p.suffixes) {
+  if (p.params) {
+    const effects = p.params.effects || {};
+    const ghost = p.params.representation?.ghost || 0;
+
+    return {
+      bitcrushAmount: clamp((effects.bitcrush || 0) + ghost * 0.12, 0, 1),
+      driveAmount: clamp((effects.drive || 0) + (effects.distortion || 0) * 0.35 + ghost * 0.10, 0, 1),
+      ghostAmount: clamp(ghost, 0, 1),
+      jitterAmount: clamp((effects.tear || 0) * 0.65 + (effects.roughness || 0) * 0.18 + (view.motion === "DYN" ? 0.04 : 0), 0, 1),
+    };
+  }
+
+  let bitcrushAmount = view.matter === "RPV" ? 0.22 : 0;
+  let driveAmount = view.matter === "RPV" ? 0.12 : 0;
+  let jitterAmount = view.motion === "DYN" ? 0.04 : 0;
+  let ghostAmount = view.matter === "RPV" ? 0.45 : 0;
+
+  for (const suffix of view.suffixes) {
     if (suffix === "tx") {
       bitcrushAmount += 0.62;
       jitterAmount += 0.55;
@@ -57,13 +73,14 @@ function countForNumber(number) {
 }
 
 function voiceNoise(time, localTime, p, sampleRate) {
-  const count = countForNumber(p.number);
-  const motion = p.motion === "DYN" ? Math.sin(time * TWO_PI * 0.33) : 0;
+  const view = legacyProgramView(p);
+  const count = countForNumber(view.number);
+  const motion = view.motion === "DYN" ? Math.sin(time * TWO_PI * 0.33) : 0;
   const tone = Math.sin(time * TWO_PI * (70 + count * 23 + motion * 18)) * 0.22;
   let sum = tone;
 
   for (let i = 0; i < count; i++) {
-    const rate = p.motion === "DYN" ? 900 + i * 700 : 250 + i * 180;
+    const rate = view.motion === "DYN" ? 900 + i * 700 : 250 + i * 180;
     const noiseIndex = Math.floor((time + i * 17.13) * rate);
     const band = hashNoise(noiseIndex) * (0.34 / count);
     const wave = Math.sin((localTime * (3 + i * 2) + i * 0.19) * TWO_PI) * 0.12;
@@ -71,7 +88,7 @@ function voiceNoise(time, localTime, p, sampleRate) {
   }
 
   const sampleNoise = hashNoise(Math.floor(time * sampleRate));
-  sum += sampleNoise * (p.motion === "DYN" ? 0.16 : 0.06);
+  sum += sampleNoise * (view.motion === "DYN" ? 0.16 : 0.06);
 
   return sum;
 }
@@ -90,8 +107,9 @@ function clickTrain(time, period, offset, freq) {
 }
 
 function voiceClick(time, localTime, p) {
-  const count = countForNumber(p.number);
-  const drift = p.motion === "DYN" ? Math.sin(time * TWO_PI * 0.42) * 0.035 : 0;
+  const view = legacyProgramView(p);
+  const count = countForNumber(view.number);
+  const drift = view.motion === "DYN" ? Math.sin(time * TWO_PI * 0.42) * 0.035 : 0;
   let out = clickTrain(localTime, 0.175 + drift, 0, 920);
 
   if (count >= 2) {
@@ -106,8 +124,9 @@ function voiceClick(time, localTime, p) {
 }
 
 function voiceRoll(time, _localTime, p) {
-  const count = countForNumber(p.number);
-  const dyn = p.motion === "DYN" ? Math.sin(time * TWO_PI * 0.27) : 0;
+  const view = legacyProgramView(p);
+  const count = countForNumber(view.number);
+  const dyn = view.motion === "DYN" ? Math.sin(time * TWO_PI * 0.27) : 0;
   const base = 96 + dyn * 30;
   const trem = 0.55 + 0.45 * Math.sin(time * TWO_PI * (5.5 + dyn * 1.7));
   let out = 0;
@@ -121,11 +140,13 @@ function voiceRoll(time, _localTime, p) {
 }
 
 function voiceRoot(time, localTime, p, sampleRate) {
-  if (p.root === "s") {
+  const view = legacyProgramView(p);
+
+  if (view.root === "s") {
     return voiceNoise(time, localTime, p, sampleRate);
   }
 
-  if (p.root === "k") {
+  if (view.root === "k") {
     return voiceClick(time, localTime, p, sampleRate);
   }
 

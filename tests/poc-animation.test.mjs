@@ -9,6 +9,7 @@ import {
   visualStyleForProgram,
   visualStyleForPrograms,
 } from "../src/engines/poc-animation.js";
+import { parseIkalProgram } from "../src/parser/ikal-parser.js";
 
 const program = {
   root: "r",
@@ -103,5 +104,19 @@ assert.deepEqual(
   styleCalls.map(([name]) => name),
   Object.keys(style),
 );
+
+const ikalPrograms = parseIkalProgram("ļtala alxrasa ačxwuža").sequence;
+const ikalFrame = renderAsciiFrame({
+  cols: 8,
+  rows: 3,
+  frame: 12,
+  programs: ikalPrograms,
+});
+assert.equal(ikalFrame.split("\n").length, 3);
+assert.equal(ikalFrame.split("\n")[0].length, 8);
+
+const ikalStyle = visualStyleForProgram(parseIkalProgram("affrala").sequence[0], 12);
+assert.equal(Number(ikalStyle["--ikal-saturate"]) > 1, true);
+assert.equal(Number(ikalStyle["--ikal-contrast"]) > 1, true);
 
 console.log("poc-animation ok");

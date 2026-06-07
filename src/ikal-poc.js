@@ -1,7 +1,7 @@
 import { createPocAnimation } from "./engines/poc-animation.js";
 import { createPocImage } from "./engines/poc-image.js";
 import { createPocMusic } from "./engines/poc-music.js";
-import { parseProgramme } from "./parser/poc-parser.js";
+import { parseIkalProgram } from "./parser/ikal-parser.js";
 
 export function createIkalPocApp({
   cmd,
@@ -9,7 +9,7 @@ export function createIkalPocApp({
   runButton,
   screen,
   stillButton,
-  parse = parseProgramme,
+  parse = parseIkalProgram,
   createMusic = createPocMusic,
   createAnimation = createPocAnimation,
   createImage = createPocImage,

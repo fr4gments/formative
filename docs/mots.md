@@ -63,6 +63,19 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 | Remplace probablement | `kal`, effets de clic |
 | Effet attendu | impulsions, clics, taps |
 
+### `ļtutļa`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `ļt` |
+| Function | `DYN` |
+| Ca | essence `RPV` |
+| Domaine IKAL | musique |
+| Sens Ithkuil retenu | ticking/clicking/tapping sound, dynamique et representatif |
+| Remplace probablement | `kul` |
+| Effet attendu | clics mouvants, fantomes, echoes representatifs |
+
 ### `ačxwala`
 
 | Champ | Valeur |
@@ -71,8 +84,21 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 | Racine | `čxw` |
 | Domaine IKAL | musique |
 | Sens Ithkuil retenu | raucous sound/noise |
-| Remplace probablement | `sus`, bruit dense |
+| Role IKAL prevu | forme simple de la famille bruit |
 | Effet attendu | bruit, souffle rugueux, densite sonore |
+
+### `ačxwuža`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `čxw` |
+| Function | `DYN` |
+| Ca | configuration `MFC` |
+| Domaine IKAL | musique |
+| Sens Ithkuil retenu | raucous sound/noise, dynamique, multiplex fuzzy connected |
+| Remplace probablement | `suš` / `sus` |
+| Effet attendu | masse de bruit dynamique, dense, connectee |
 
 ### `abjala`
 
@@ -84,6 +110,63 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 | Sens Ithkuil retenu | bang/boom/explosive sound |
 | Remplace probablement | accents percussifs / impacts |
 | Effet attendu | attaques fortes, boom, impact |
+
+### `alxrala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `lxr` |
+| Domaine IKAL | musique / animation |
+| Sens Ithkuil retenu | roll/wheeling/winding |
+| Effet attendu | roulement, rotation, ondulation circulaire |
+
+### `alxrasa`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `lxr` |
+| Ca | configuration `DPX` |
+| Domaine IKAL | musique / animation |
+| Sens Ithkuil retenu | roll/wheeling/winding, duplex |
+| Remplace probablement | `ras` |
+| Effet attendu | roulement en deux poles, oscillation double |
+
+### `alxružla`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `lxr` |
+| Function | `DYN` |
+| Ca | configuration `MFC`, essence `RPV` |
+| Domaine IKAL | musique / animation |
+| Sens Ithkuil retenu | roll/wheeling/winding, dynamique, multiplex fuzzy connected, representatif |
+| Remplace probablement | `ruř` / `rur` |
+| Effet attendu | nuage de roulements mouvants, fantomes, flous |
+
+### `pswala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `psw` |
+| Domaine IKAL | musique |
+| Sens Ithkuil retenu | respiration/breathing/panting/gasping |
+| Effet attendu | souffle, respiration, air module |
+
+### `pswatļa`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `psw` |
+| Ca | essence `RPV` |
+| Domaine IKAL | musique |
+| Sens Ithkuil retenu | respiration/breathing, representatif |
+| Remplace probablement | `sal` |
+| Effet attendu | souffle fantome, respiration distante, halo sonore |
 
 ## Mouvement
 
@@ -150,6 +233,17 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 | Effet attendu | grain, rugosite, texture visuelle |
 
 ## Rupture / glitch
+
+### `affrala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Candidat |
+| Racine | `ffr` |
+| Domaine IKAL | glitch |
+| Sens Ithkuil retenu | bending/distortion/twisting/warping |
+| Remplace probablement | suffixe POC `-šk` / `-sk` |
+| Effet attendu | distorsion, repli, saturation de signal ou de forme |
 
 ### `sčala`
 
