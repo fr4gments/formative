@@ -9,6 +9,7 @@ nav:
       - Vocabulaire: mots.md
       - Migration POC: migration-poc.md
       - Paramètres artistiques: params.md
+      - Effets audio: effets-audio.md
       - Notes techniques: langage.md
 theme:
   name: mkdocs

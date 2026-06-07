@@ -48,6 +48,34 @@ assert.equal(mapped.ithkuil.function, "DYN");
 assert.equal(mapped.ithkuil.ca.essence, "RPV");
 assert.equal(mapped.ithkuil.parsed.case, "THM");
 
+const affixed = parseIthkuilWord("ļtaloţmařčompa");
+assert.equal(affixed.error, undefined);
+assert.equal(affixed.ithkuil.type, "formative");
+assert.equal(affixed.ithkuil.root, "ļt");
+assert.equal(affixed.ithkuil.normalized, "ļtaloţmařčompa");
+assert.deepEqual(affixed.ithkuil.affixes.slotV, []);
+assert.deepEqual(affixed.ithkuil.affixes.slotVII, [
+  { cs: "ţm", degree: 7, type: 1 },
+  { cs: "řč", degree: 1, type: 1 },
+  { cs: "mp", degree: 7, type: 1 },
+]);
+assert.deepEqual(affixed.ithkuil.parsed.slotVIIAffixes, affixed.ithkuil.affixes.slotVII);
+
+const slotVAffixed = parseIthkuilWord("ļtaţmolla");
+assert.equal(slotVAffixed.error, undefined);
+assert.deepEqual(slotVAffixed.ithkuil.affixes.slotV, [
+  { cs: "ţm", degree: 7, type: 1 },
+]);
+assert.deepEqual(slotVAffixed.ithkuil.affixes.slotVII, []);
+
+const generatedNoiseReverb = parseIthkuilWord("ačxwužumpa");
+assert.equal(generatedNoiseReverb.error, undefined);
+assert.equal(generatedNoiseReverb.ithkuil.root, "čxw");
+assert.equal(generatedNoiseReverb.ithkuil.function, "DYN");
+assert.deepEqual(generatedNoiseReverb.ithkuil.affixes.slotVII, [
+  { cs: "mp", degree: 9, type: 1 },
+]);
+
 const referential = parseIthkuilWord("royež");
 assert.equal(referential.error, undefined);
 assert.equal(referential.ithkuil.type, "referential");

@@ -89,8 +89,8 @@
   .suggestion {
     appearance: none; border: 0; border-bottom: 1px solid rgba(124,252,106,0.12);
     background: transparent; color: inherit; cursor: pointer; font: inherit;
-    display: grid; grid-template-columns: minmax(80px, 11ch) minmax(0, 1fr);
-    gap: 2px 12px; padding: 7px 9px; text-align: left;
+    display: grid; grid-template-columns: minmax(0, 1fr);
+    gap: 3px; padding: 7px 9px; text-align: left;
   }
   .suggestion:last-child { border-bottom: 0; }
   .suggestion:hover,
@@ -98,11 +98,21 @@
     background: linear-gradient(90deg, rgba(0,240,255,0.16), rgba(255,47,179,0.10));
     color: #d7ff34;
   }
-  .suggestion-form { color: #d7ff34; font-weight: bold; }
+  .suggestion.inspector { cursor: default; }
+  .suggestion.inspector:hover { background: transparent; color: inherit; }
+  .suggestion-form {
+    color: #d7ff34; font-weight: bold; line-height: 1.16;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
   .suggestion-meta { color: #91b58b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .suggestion-signature {
+    grid-column: 1 / -1; color: #00f0ff; font-size: 12px;
+    overflow-wrap: anywhere; white-space: normal;
+  }
+  .suggestion-signature[hidden] { display: none; }
   .suggestion-sense {
     grid-column: 1 / -1; color: #6f8a6a; font-size: 12px;
-    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    overflow-wrap: anywhere; white-space: normal;
   }
   #actions {
     display: flex; gap: 8px; align-items: stretch;

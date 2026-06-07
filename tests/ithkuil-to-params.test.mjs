@@ -24,6 +24,14 @@ const click = paramsForForm("ļtala");
 assert.equal(click.version, 1);
 assert.equal(click.role, "voice");
 assert.equal(click.family, "click");
+assert.deepEqual(click.audioEffects, {
+  degradation: 0,
+  force: 0,
+  instability: 0,
+  intensity: 0,
+  randomModulation: 0,
+  reverb: 0,
+});
 assert.equal(click.motion.kind, "static");
 assert.equal(click.multiplicity.configuration, "UPX");
 assert.equal(click.multiplicity.count, 1);
@@ -81,6 +89,60 @@ const withAffix = {
 const affixResult = paramsForIthkuilWord({ ithkuil: withAffix, seedRoot: seedRootForIthkuil(withAffix) });
 assert.ok(affixResult.params);
 assert.equal(affixResult.diagnostics[0].code, "unsupported-affixes");
+
+const intensity = paramsForForm("ļtaloţma");
+assert.equal(intensity.audioEffects.intensity, 0.7);
+assert.equal(intensity.effects.drive > click.effects.drive, true);
+assert.equal(intensity.effects.saturation > click.effects.saturation, true);
+
+const randomModulation = paramsForForm("ļtalöjma");
+assert.equal(randomModulation.audioEffects.randomModulation, 0.6);
+assert.equal(randomModulation.effects.tear > click.effects.tear, true);
+
+const force = paramsForForm("ļtalüsma");
+assert.equal(force.audioEffects.force, 0.8);
+assert.equal(force.effects.roughness > click.effects.roughness, true);
+
+const degradation = paramsForForm("ļtalařča");
+assert.equal(degradation.audioEffects.degradation, 0.9);
+assert.equal(degradation.effects.bitcrush > 0.6, true);
+
+const instability = paramsForForm("ļtalämha");
+assert.equal(instability.audioEffects.instability, 0.8);
+assert.equal(instability.effects.tear > 0.3, true);
+
+const reverb = paramsForForm("ļtalompa");
+assert.equal(reverb.audioEffects.reverb, 0.7);
+assert.equal(reverb.effects.reverb, 0.7);
+
+const strongNoiseReverb = paramsForForm("ačxwužumpa");
+assert.equal(strongNoiseReverb.family, "noise");
+assert.equal(strongNoiseReverb.audioEffects.reverb, 0.9);
+assert.equal(strongNoiseReverb.effects.reverb, 0.9);
+
+const combo = paramsForForm("ļtaloţmařčompa");
+assert.equal(combo.audioEffects.intensity, 0.7);
+assert.equal(combo.audioEffects.degradation, 0.9);
+assert.equal(combo.audioEffects.reverb, 0.7);
+assert.equal(combo.effects.drive > click.effects.drive, true);
+assert.equal(combo.effects.bitcrush > 0.6, true);
+
+const tooMany = parseIthkuilWord("ļtaloţmöjmüsmařča");
+const tooManyResult = paramsForIthkuilWord({
+  ithkuil: tooMany.ithkuil,
+  seedRoot: seedRootForIthkuil(tooMany.ithkuil),
+});
+assert.ok(tooManyResult.params);
+assert.equal(tooManyResult.diagnostics.some((item) => item.code === "too-many-audio-effects"), true);
+
+const slotVAudioAffix = parseIthkuilWord("ļtaţmolla");
+const slotVAudioAffixResult = paramsForIthkuilWord({
+  ithkuil: slotVAudioAffix.ithkuil,
+  seedRoot: seedRootForIthkuil(slotVAudioAffix.ithkuil),
+});
+assert.ok(slotVAudioAffixResult.params);
+assert.equal(slotVAudioAffixResult.params.audioEffects.intensity, 0);
+assert.equal(slotVAudioAffixResult.diagnostics[0].code, "unsupported-audio-affix-slot");
 
 const base = paramsForForm("alxružla");
 const resolved = resolveIkalParams(base, {

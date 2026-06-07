@@ -1,3 +1,4 @@
+import { IKAL_AUDIO_AFFIX_FORMS } from "./ikal-audio-affixes.js";
 import { IKAL_SEED_ROOTS, seedRootForForm } from "./ithkuil-seed-roots.js";
 
 const EXTRA_FORMATIVES = new Map([
@@ -18,6 +19,8 @@ const REFERENTIALS = new Map([
   }],
 ]);
 
+const AFFIXED_FORMATIVES = new Map(IKAL_AUDIO_AFFIX_FORMS.map((form) => [form.form, form]));
+
 function normalizeText(text) {
   return text.trim();
 }
@@ -34,9 +37,11 @@ function glossesForSeed(seed) {
   };
 }
 
-function formativeFromSeed(source, seed) {
+function formativeFromSeed(source, seed, overrides = {}) {
   const ca = clonePlain(seed.ca || {});
   const fn = seed.function || "STA";
+  const slotVAffixes = clonePlain(overrides.slotVAffixes || []);
+  const slotVIIAffixes = clonePlain(overrides.slotVIIAffixes || []);
   const parsed = {
     ca,
     case: "THM",
@@ -44,8 +49,8 @@ function formativeFromSeed(source, seed) {
     function: fn,
     root: seed.cr,
     shortcut: false,
-    slotVAffixes: [],
-    slotVIIAffixes: [],
+    slotVAffixes,
+    slotVIIAffixes,
     specification: "BSC",
     stem: 1,
     type: "UNF/C",
@@ -55,8 +60,8 @@ function formativeFromSeed(source, seed) {
   return {
     ithkuil: {
       affixes: {
-        slotV: [],
-        slotVII: [],
+        slotV: slotVAffixes,
+        slotVII: slotVIIAffixes,
       },
       ca,
       case: parsed.case,
@@ -67,7 +72,7 @@ function formativeFromSeed(source, seed) {
       function: fn,
       gloss: glosses.short,
       glosses,
-      normalized: seed.form,
+      normalized: overrides.normalized || seed.form,
       parsed: clonePlain(parsed),
       root: seed.cr,
       source,
@@ -126,6 +131,20 @@ export function parseIthkuilWord(text) {
 
   if (seed) {
     return formativeFromSeed(source, seed);
+  }
+
+  const affixed = AFFIXED_FORMATIVES.get(source);
+
+  if (affixed) {
+    const baseSeed = seedRootForForm(affixed.baseForm);
+
+    if (baseSeed) {
+      return formativeFromSeed(source, baseSeed, {
+        normalized: source,
+        slotVAffixes: affixed.slotVAffixes,
+        slotVIIAffixes: affixed.slotVIIAffixes,
+      });
+    }
   }
 
   const referential = REFERENTIALS.get(source);

@@ -6,6 +6,7 @@ Cette page conserve les notes techniques issues de l'implementation. La referenc
 - [Vocabulaire](mots.md)
 - [Migration POC](migration-poc.md)
 - [Parametres artistiques](params.md)
+- [Effets audio](effets-audio.md)
 
 ## Etape 2 - vraies formes Ithkuil
 
@@ -66,10 +67,22 @@ Voir [Parametres artistiques](params.md) pour le contrat detaille.
 Les parametres finaux de l'app devront ensuite etre resolus comme :
 
 ```text
-baseParams + userParams -> params
+baseParams + audioEffects -> params
 ```
 
-`userParams` designera les valeurs ecrites par l'utilisateur dans l'editeur. Le resolver interne existe deja avec `userParams` vide ; la syntaxe editeur n'est pas encore implemente.
+`audioEffects` designe les effets audio portes par des affixes Ithkuil gradues. La syntaxe `mot(0.85, 0.19)` reste active comme prototype transitoire : chaque position est mappee vers un champ autorise par la signature du mot, puis resolue par `baseParams + userParams -> params`.
+
+## Etape 4 - affixes audio
+
+La prochaine tranche ne generalise pas les effets a tout le visuel. Elle cible seulement le son :
+
+- un mot sonore reste la source ;
+- les proprietes de source viennent autant que possible du mot lui-meme : Function, Ca.configuration, Ca.essence, famille lexicale ;
+- les effets audio viennent d'affixes gradues sur le meme formative ;
+- plusieurs affixes audio sur le meme mot se cumulent sur le meme evenement sonore ;
+- les effets visuels seront definis plus tard avec leurs propres mots et affixes.
+
+Voir [Effets audio](effets-audio.md) pour les affixes retenus `ITY`, `MDL`, `FRC`, `OPF`, `FLS` et `DTS`.
 
 ## Pont temporaire vers les moteurs
 

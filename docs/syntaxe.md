@@ -39,6 +39,8 @@ L'editeur propose donc une completion clavier. On peut taper une approximation A
 
 Ces approximations ne sont pas des alias du langage. Si elles sont lancees telles quelles sans completion, elles restent analysees comme des formes differentes ou non reconnues.
 
+Pour les effets audio affixes, l'editeur propose aussi des formes generees depuis le nom d'affixe, l'effet ou le degre : `ity`, `opf`, `dts`, `dts9`, `degr`, `reverb`, etc. L'inspecteur affiche alors les affixes et degres, par exemple `ITY/7 intensity = 0.7`.
+
 ## Modes prevus
 
 Les modes doivent etre declares par des mots IKAL visibles :
@@ -51,24 +53,39 @@ Les modes doivent etre declares par des mots IKAL visibles :
 
 La ponctuation `:` marque une declaration de couche. Elle n'est pas encore branchee dans le parser applicatif.
 
-## Parametres prevus
+## Effets audio gradues
 
-Les mots IKAL doivent pouvoir recevoir des parametres directement dans l'editeur. Ces parametres modulent les valeurs derivees du sens Ithkuil, sans remplacer ce sens.
+La direction validee pour l'etape 4 n'est pas une syntaxe finale `mot(...)`, ni un chainage `mot.effet(...)`.
 
-Exemple d'intention, syntaxe non definitive :
-
-```ikal
-alxružla(ghost: 0.8, density: 0.95)
-affrala(drive: 0.4)
-```
-
-Le modele vise est documente dans [Parametres artistiques](params.md) :
+Pour les effets audio, la syntaxe cible est morphologique :
 
 ```text
-baseParams + userParams -> params
+forme sonore + affixes audio gradues = un seul evenement sonore modifie
 ```
 
-Cette syntaxe n'est pas encore branchee. Elle sera traitee apres le branchement initial des vraies formes Ithkuil dans l'application.
+Concretement :
+
+- le mot de base porte la source sonore et ses proprietes structurelles ;
+- un affixe audio porte une intention sonore, par exemple intensite, modulation aleatoire, force, degradation, instabilite ou reverb ;
+- le degre de l'affixe donne une valeur a une decimale : absence = `0.0`, degre 1 = `0.1`, ..., degre 9 = `0.9` ;
+- plusieurs affixes audio sur le meme mot se cumulent sur le meme evenement ;
+- un espace lance toujours l'evenement suivant.
+
+La premiere passe concerne uniquement le son. Les effets image / animation auront leurs propres mots et affixes plus tard.
+
+Le cadrage est documente dans [Effets audio](effets-audio.md).
+
+## Prototype de parametres
+
+Le prototype positionnel suivant est actuellement branche pour tester les valeurs continues et l'inspecteur :
+
+```ikal
+alxružla(0.8, 0.95, 0.4)
+affrala(0.85)
+sčala(0.12, 0.34)
+```
+
+Ce prototype est transitoire. Il reste utile pour verifier le moteur, mais il ne doit pas devenir la surface canonique du langage.
 
 ## Etat de transition
 

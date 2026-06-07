@@ -1,9 +1,20 @@
+import {
+  MAX_ACTIVE_AUDIO_EFFECTS,
+  audioAffixCompatibleWithFamily,
+  audioAffixDefinitionFor,
+  emptyAudioEffects,
+  isAudioAffixDegreeValid,
+  paramsEffectsForAudioAffix,
+  valueForAudioAffix,
+} from "./ikal-audio-affixes.js";
+
 export const IKAL_PARAMS_VERSION = 1;
 
 const ZERO_EFFECTS = {
   bitcrush: 0,
   distortion: 0,
   drive: 0,
+  reverb: 0,
   roughness: 0,
   saturation: 0,
   tear: 0,
@@ -110,21 +121,6 @@ function representationParams(ca = {}) {
   };
 }
 
-function unsupportedFeatureDiagnostics(ithkuil) {
-  const diagnostics = [];
-  const slotVCount = ithkuil.affixes?.slotV?.length || 0;
-  const slotVIICount = ithkuil.affixes?.slotVII?.length || 0;
-
-  if (slotVCount + slotVIICount > 0) {
-    diagnostics.push(diagnostic(
-      "unsupported-affixes",
-      "forme Ithkuil valide, mais les affixes ne sont pas encore mappes artistiquement par IKAL",
-    ));
-  }
-
-  return diagnostics;
-}
-
 function cloneParams(params) {
   return JSON.parse(JSON.stringify(params));
 }
@@ -174,6 +170,84 @@ export function resolveIkalParams(baseParams, userParams = {}) {
   return { diagnostics, params };
 }
 
+function affixLabel(affix) {
+  return "cs=" + String(affix?.cs || "?") + ", type=" + String(affix?.type || "?") + ", degree=" + String(affix?.degree || "?");
+}
+
+function applyAudioEffect(audioEffects, definition, value) {
+  audioEffects[definition.id] = clamp01(Math.max(audioEffects[definition.id] || 0, value));
+}
+
+function audioParamsForAffixes(ithkuil, family) {
+  const diagnostics = [];
+  const audioEffects = emptyAudioEffects();
+  const mappedParamsEffects = [];
+  let activeCount = 0;
+
+  for (const affix of ithkuil.affixes?.slotV || []) {
+    const definition = audioAffixDefinitionFor(affix);
+
+    if (definition) {
+      diagnostics.push(diagnostic(
+        "unsupported-audio-affix-slot",
+        "affixe audio " + definition.abbreviation + " reconnu, mais IKAL attend les effets audio en Slot VII",
+      ));
+    } else {
+      diagnostics.push(diagnostic(
+        "unsupported-affixes",
+        "forme Ithkuil valide, mais affixe Slot V non mappe artistiquement par IKAL : " + affixLabel(affix),
+      ));
+    }
+  }
+
+  for (const affix of ithkuil.affixes?.slotVII || []) {
+    const definition = audioAffixDefinitionFor(affix);
+
+    if (!definition) {
+      diagnostics.push(diagnostic(
+        "unsupported-affixes",
+        "forme Ithkuil valide, mais affixe Slot VII non mappe artistiquement par IKAL : " + affixLabel(affix),
+      ));
+      continue;
+    }
+
+    if (!isAudioAffixDegreeValid(affix)) {
+      diagnostics.push(diagnostic(
+        "invalid-audio-affix-degree",
+        "degre d'affixe audio invalide pour " + definition.abbreviation + " : " + String(affix.degree),
+      ));
+      continue;
+    }
+
+    if (!audioAffixCompatibleWithFamily(definition, family)) {
+      diagnostics.push(diagnostic(
+        "incompatible-audio-effect",
+        "effet audio " + definition.label + " incompatible avec la famille IKAL : " + family,
+      ));
+      continue;
+    }
+
+    const value = valueForAudioAffix(definition, affix.degree);
+
+    activeCount++;
+    applyAudioEffect(audioEffects, definition, value);
+    mappedParamsEffects.push(paramsEffectsForAudioAffix(definition, value));
+  }
+
+  if (activeCount > MAX_ACTIVE_AUDIO_EFFECTS) {
+    diagnostics.push(diagnostic(
+      "too-many-audio-effects",
+      "trop d'effets audio sur le meme evenement : " + activeCount + " actifs, limite initiale " + MAX_ACTIVE_AUDIO_EFFECTS,
+    ));
+  }
+
+  return {
+    audioEffects,
+    diagnostics,
+    effects: mergeEffects(...mappedParamsEffects),
+  };
+}
+
 export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   if (!ithkuil || ithkuil.type !== "formative") {
     return {
@@ -204,11 +278,14 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   const family = rootRule.family;
   const role = rootRule.role;
   const mode = role === "mode" ? rootRule.mode || seedRoot.domain : null;
+  const affixParams = audioParamsForAffixes(ithkuil, family);
   const effects = mergeEffects(
     FAMILY_EFFECTS[family],
+    affixParams.effects,
     representation.ghost ? { bitcrush: 0.08, drive: 0.08 } : null,
   );
   const baseParams = {
+    audioEffects: affixParams.audioEffects,
     domain: seedRoot.domain,
     effects,
     family,
@@ -234,7 +311,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   return {
     baseParams,
     diagnostics: [
-      ...unsupportedFeatureDiagnostics(ithkuil),
+      ...affixParams.diagnostics,
       ...resolved.diagnostics,
     ],
     params: resolved.params,

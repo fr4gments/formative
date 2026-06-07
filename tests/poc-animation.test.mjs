@@ -119,4 +119,36 @@ const ikalStyle = visualStyleForProgram(parseIkalProgram("affrala").sequence[0],
 assert.equal(Number(ikalStyle["--ikal-saturate"]) > 1, true);
 assert.equal(Number(ikalStyle["--ikal-contrast"]) > 1, true);
 
+const softDistortion = parseIkalProgram("affrala(0.1)").sequence[0];
+const hardDistortion = parseIkalProgram("affrala(0.9)").sequence[0];
+const softDistortionStyle = visualStyleForProgram(softDistortion, 12);
+const hardDistortionStyle = visualStyleForProgram(hardDistortion, 12);
+assert.equal(Number(hardDistortionStyle["--ikal-saturate"]) > Number(softDistortionStyle["--ikal-saturate"]), true);
+assert.equal(Number(hardDistortionStyle["--ikal-red-x"].replace("px", "")) > Number(softDistortionStyle["--ikal-red-x"].replace("px", "")), true);
+assert.notEqual(
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: softDistortion }),
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: hardDistortion }),
+);
+
+const softTear = parseIkalProgram("sčala(0.1)").sequence[0];
+const hardTear = parseIkalProgram("sčala(0.9)").sequence[0];
+const softTearStyle = visualStyleForProgram(softTear, 12);
+const hardTearStyle = visualStyleForProgram(hardTear, 12);
+assert.equal(Number(hardTearStyle["--ikal-band-alpha"]) > Number(softTearStyle["--ikal-band-alpha"]), true);
+assert.equal(Number(hardTearStyle["--ikal-red-x"].replace("px", "")) > Number(softTearStyle["--ikal-red-x"].replace("px", "")), true);
+assert.notEqual(
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: softTear }),
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: hardTear }),
+);
+
+const quietRoll = parseIkalProgram("alxružla(0.1,0.1,0.1)").sequence[0];
+const intenseRoll = parseIkalProgram("alxružla(0.9,0.9,0.9)").sequence[0];
+const quietRollStyle = visualStyleForProgram(quietRoll, 12);
+const intenseRollStyle = visualStyleForProgram(intenseRoll, 12);
+assert.equal(Number(intenseRollStyle["--ikal-saturate"]) > Number(quietRollStyle["--ikal-saturate"]), true);
+assert.notEqual(
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: quietRoll }),
+  renderAsciiFrame({ cols: 12, rows: 4, frame: 12, program: intenseRoll }),
+);
+
 console.log("poc-animation ok");

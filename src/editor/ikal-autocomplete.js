@@ -1,4 +1,11 @@
 import { IKAL_SEED_ROOTS } from "../parser/ithkuil-seed-roots.js";
+import {
+  DEFAULT_AUDIO_AFFIX_DEGREES,
+  IKAL_AUDIO_AFFIX_FORMS,
+  audioAffixDefinitionFor,
+  formatAudioAffixSignature,
+} from "../parser/ikal-audio-affixes.js";
+import { formatParamSignatureForSeedRoot } from "../parser/ikal-param-signatures.js";
 
 const TOKEN_DELIMITER = /[\s(),:]/;
 const NOOP_AUTOCOMPLETE = {
@@ -6,6 +13,7 @@ const NOOP_AUTOCOMPLETE = {
   hide: () => {},
   refresh: () => {},
 };
+const AUDIO_BASE_PRIORITY = ["ļtala", "ačxwuža", "alxrasa", "pswala", "abjala"];
 
 export function asciiFold(text) {
   return text
@@ -26,6 +34,52 @@ export function completionTokenAt(value, caret) {
     end,
     start,
     text: value.slice(start, end),
+  };
+}
+
+function inspectionTokenAt(value, caret) {
+  const end = Math.max(0, Math.min(caret ?? value.length, value.length));
+  const lineStart = value.lastIndexOf("\n", end - 1) + 1;
+  let depth = 0;
+  let start = null;
+
+  for (let i = lineStart; i < end; i++) {
+    const char = value[i];
+
+    if (start === null) {
+      if (/\s/.test(char)) {
+        continue;
+      }
+
+      start = i;
+      depth = 0;
+    }
+
+    if (char === "(") {
+      depth++;
+    } else if (char === ")") {
+      depth = Math.max(0, depth - 1);
+    } else if (/\s/.test(char) && depth === 0) {
+      start = null;
+    }
+  }
+
+  if (start === null) {
+    return {
+      end,
+      start: end,
+      text: "",
+    };
+  }
+
+  const raw = value.slice(start, end);
+  const open = raw.indexOf("(");
+  const text = open >= 0 ? raw.slice(0, open) : raw;
+
+  return {
+    end,
+    start,
+    text,
   };
 }
 
@@ -92,8 +146,118 @@ function suggestionFromRoot(root, score) {
     family: root.family,
     form: root.form,
     migrationFrom: root.migrationFrom || [],
+    paramSignature: formatParamSignatureForSeedRoot(root),
     score,
     sense: root.sense,
+  };
+}
+
+function isCompletableAudioForm(form) {
+  return !form.slotVAffixes
+    && (form.slotVIIAffixes?.length || 0) > 0
+    && (form.slotVIIAffixes?.length || 0) <= 3
+    && !form.kind?.startsWith("diagnostic");
+}
+
+function baseRootForAudioForm(form, roots) {
+  return roots.find((root) => root.form === form.baseForm);
+}
+
+function aliasesForAudioForm(form) {
+  const affixes = form.slotVIIAffixes || [];
+  const labels = affixes
+    .map((affix) => audioAffixDefinitionFor(affix))
+    .filter(Boolean)
+    .flatMap((definition) => [
+      definition.abbreviation,
+      definition.id,
+      definition.label,
+      definition.abbreviation + String(affixes.find((affix) => audioAffixDefinitionFor(affix) === definition)?.degree || ""),
+      definition.id + String(affixes.find((affix) => audioAffixDefinitionFor(affix) === definition)?.degree || ""),
+      definition.label + String(affixes.find((affix) => audioAffixDefinitionFor(affix) === definition)?.degree || ""),
+    ]);
+  const compactAffixes = affixes
+    .map((affix) => {
+      const definition = audioAffixDefinitionFor(affix);
+
+      return definition ? definition.abbreviation + String(affix.degree) : "";
+    })
+    .join("");
+  const compactLabels = affixes
+    .map((affix) => audioAffixDefinitionFor(affix)?.id || "")
+    .join("");
+  const base = asciiFold(form.baseForm || "");
+
+  return [
+    asciiFold(form.form),
+    base + compactAffixes.toLowerCase(),
+    base + "+" + compactAffixes.toLowerCase(),
+    base + compactLabels.toLowerCase(),
+    ...labels.map(asciiFold),
+  ].filter(Boolean);
+}
+
+function isDefaultDegreeAudioForm(form) {
+  return (form.slotVIIAffixes || []).every((affix) => {
+    const definition = audioAffixDefinitionFor(affix);
+
+    return definition && DEFAULT_AUDIO_AFFIX_DEGREES[definition.abbreviation] === affix.degree;
+  });
+}
+
+function scoreAudioForm(form, query) {
+  const foldedForm = asciiFold(form.form);
+  const aliases = aliasesForAudioForm(form);
+  const defaultBoost = isDefaultDegreeAudioForm(form) ? 20 : 0;
+  const singleBoost = (form.slotVIIAffixes?.length || 0) === 1 ? 30 : 0;
+
+  if (form.form === query) {
+    return 980 + defaultBoost;
+  }
+
+  if (foldedForm === query) {
+    return 880 + defaultBoost;
+  }
+
+  if (aliases.includes(query)) {
+    return 760 + defaultBoost + singleBoost;
+  }
+
+  if (foldedForm.startsWith(query)) {
+    return 600 + defaultBoost - foldedForm.length / 100;
+  }
+
+  if (aliases.some((alias) => alias.startsWith(query))) {
+    return 640 + defaultBoost + singleBoost;
+  }
+
+  if (foldedForm.includes(query)) {
+    return 420 + defaultBoost;
+  }
+
+  return 0;
+}
+
+function audioBaseRank(form) {
+  const index = AUDIO_BASE_PRIORITY.indexOf(form.baseForm);
+
+  return index >= 0 ? index : AUDIO_BASE_PRIORITY.length;
+}
+
+function suggestionFromAudioForm(form, roots, score) {
+  const baseRoot = baseRootForAudioForm(form, roots);
+  const signature = formatAudioAffixSignature(form.slotVIIAffixes);
+
+  return {
+    cr: baseRoot?.cr || "",
+    domain: baseRoot?.domain || "music",
+    family: baseRoot?.family || "audio-affix",
+    form: form.form,
+    migrationFrom: [],
+    paramSignature: signature,
+    score,
+    sortRank: audioBaseRank(form),
+    sense: (baseRoot?.sense || "sound") + " + " + signature,
   };
 }
 
@@ -107,10 +271,16 @@ export function suggestIkalWords(query, {
     return [];
   }
 
-  return roots
+  const rootSuggestions = roots
     .map((root) => suggestionFromRoot(root, scoreRoot(root, foldedQuery)))
-    .filter((suggestion) => suggestion.score > 0)
-    .sort((a, b) => b.score - a.score || a.form.localeCompare(b.form))
+    .filter((suggestion) => suggestion.score > 0);
+  const audioSuggestions = IKAL_AUDIO_AFFIX_FORMS
+    .filter(isCompletableAudioForm)
+    .map((form) => suggestionFromAudioForm(form, roots, scoreAudioForm(form, foldedQuery)))
+    .filter((suggestion) => suggestion.score > 0);
+
+  return [...rootSuggestions, ...audioSuggestions]
+    .sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form))
     .slice(0, limit);
 }
 
@@ -131,10 +301,31 @@ function isCanonicalExactToken(token, suggestion) {
   return token.text === suggestion.form;
 }
 
+function previousCompletionTokenBefore(value, end) {
+  let tokenEnd = Math.max(0, Math.min(end, value.length));
+
+  while (tokenEnd > 0 && /\s/.test(value[tokenEnd - 1])) {
+    tokenEnd--;
+  }
+
+  let tokenStart = tokenEnd;
+
+  while (tokenStart > 0 && !TOKEN_DELIMITER.test(value[tokenStart - 1])) {
+    tokenStart--;
+  }
+
+  return {
+    end: tokenEnd,
+    start: tokenStart,
+    text: value.slice(tokenStart, tokenEnd),
+  };
+}
+
 function createSuggestionRow(doc, suggestion, index, selected) {
   const row = doc.createElement("button");
   const form = doc.createElement("span");
   const meta = doc.createElement("span");
+  const signature = doc.createElement("span");
   const sense = doc.createElement("span");
 
   row.type = "button";
@@ -149,10 +340,39 @@ function createSuggestionRow(doc, suggestion, index, selected) {
   meta.className = "suggestion-meta";
   meta.textContent = suggestion.domain + " / " + suggestion.family;
 
+  signature.className = "suggestion-signature";
+  signature.textContent = suggestion.paramSignature;
+  signature.hidden = !suggestion.paramSignature;
+
   sense.className = "suggestion-sense";
   sense.textContent = suggestion.sense;
 
-  row.append(form, meta, sense);
+  row.append(form, meta, signature, sense);
+  return row;
+}
+
+function createInspectorRow(doc, suggestion) {
+  const row = doc.createElement("div");
+  const form = doc.createElement("span");
+  const meta = doc.createElement("span");
+  const signature = doc.createElement("span");
+  const sense = doc.createElement("span");
+
+  row.className = "suggestion inspector";
+
+  form.className = "suggestion-form";
+  form.textContent = suggestion.form;
+
+  meta.className = "suggestion-meta";
+  meta.textContent = suggestion.domain + " / " + suggestion.family;
+
+  signature.className = "suggestion-signature";
+  signature.textContent = suggestion.paramSignature;
+
+  sense.className = "suggestion-sense";
+  sense.textContent = suggestion.sense;
+
+  row.append(form, meta, signature, sense);
   return row;
 }
 
@@ -169,6 +389,7 @@ export function createIkalAutocomplete({
   const doc = panel.ownerDocument || document;
   const state = {
     open: false,
+    inspecting: null,
     selectedIndex: 0,
     suggestions: [],
     token: null,
@@ -180,6 +401,7 @@ export function createIkalAutocomplete({
 
   function hide() {
     state.open = false;
+    state.inspecting = null;
     state.suggestions = [];
     state.token = null;
     panel.hidden = true;
@@ -189,6 +411,13 @@ export function createIkalAutocomplete({
 
   function render() {
     panel.replaceChildren();
+
+    if (state.inspecting) {
+      panel.append(createInspectorRow(doc, state.inspecting));
+      panel.hidden = false;
+      textarea.setAttribute("aria-expanded", "true");
+      return;
+    }
 
     for (let i = 0; i < state.suggestions.length; i++) {
       const row = createSuggestionRow(doc, state.suggestions[i], i, i === state.selectedIndex);
@@ -206,26 +435,94 @@ export function createIkalAutocomplete({
     textarea.setAttribute("aria-expanded", "true");
   }
 
+  function showInspectionForCaret(caret) {
+    const inspectionToken = inspectionTokenAt(textarea.value, caret);
+    const inspection = suggestIkalWords(inspectionToken.text, { limit: 1, roots })
+      .find((suggestion) => isCanonicalExactToken(inspectionToken, suggestion));
+
+    if (!inspection?.paramSignature) {
+      return false;
+    }
+
+    state.open = false;
+    state.inspecting = inspection;
+    state.suggestions = [];
+    state.token = inspectionToken;
+    render();
+    return true;
+  }
+
+  function normalizeDetachedOpeningParen(caret) {
+    const value = textarea.value;
+
+    if (caret <= 1 || value[caret - 1] !== "(" || !/\s/.test(value[caret - 2])) {
+      return caret;
+    }
+
+    let gapStart = caret - 1;
+
+    while (gapStart > 0 && /\s/.test(value[gapStart - 1])) {
+      gapStart--;
+    }
+
+    const previousToken = previousCompletionTokenBefore(value, gapStart);
+    const inspection = suggestIkalWords(previousToken.text, { limit: 1, roots })
+      .find((suggestion) => isCanonicalExactToken(previousToken, suggestion));
+
+    if (!inspection?.paramSignature) {
+      return caret;
+    }
+
+    const removed = (caret - 1) - gapStart;
+    const nextCaret = caret - removed;
+
+    textarea.value = value.slice(0, gapStart) + value.slice(caret - 1);
+    textarea.selectionStart = nextCaret;
+    textarea.selectionEnd = nextCaret;
+    return nextCaret;
+  }
+
   function refresh() {
-    const caret = typeof textarea.selectionStart === "number"
+    let caret = typeof textarea.selectionStart === "number"
       ? textarea.selectionStart
       : textarea.value.length;
+
+    caret = normalizeDetachedOpeningParen(caret);
     const token = completionTokenAt(textarea.value, caret);
 
     if (!token.text) {
+      if (showInspectionForCaret(caret)) {
+        return;
+      }
+
       hide();
       return;
     }
 
-    const suggestions = suggestIkalWords(token.text, { limit, roots })
-      .filter((suggestion) => !isCanonicalExactToken(token, suggestion));
+    const candidates = suggestIkalWords(token.text, { limit, roots });
+    const exact = candidates.find((suggestion) => isCanonicalExactToken(token, suggestion));
+    const suggestions = candidates.filter((suggestion) => !isCanonicalExactToken(token, suggestion));
 
     if (suggestions.length === 0) {
+      if (exact?.paramSignature) {
+        state.open = false;
+        state.inspecting = exact;
+        state.suggestions = [];
+        state.token = token;
+        render();
+        return;
+      }
+
+      if (showInspectionForCaret(caret)) {
+        return;
+      }
+
       hide();
       return;
     }
 
     state.open = true;
+    state.inspecting = null;
     state.selectedIndex = 0;
     state.suggestions = suggestions;
     state.token = token;
@@ -261,6 +558,16 @@ export function createIkalAutocomplete({
   }
 
   function handleKeyDown(event) {
+    if (state.inspecting) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        hide();
+        return true;
+      }
+
+      return false;
+    }
+
     if (!state.open && event.key === "ArrowDown") {
       refresh();
 

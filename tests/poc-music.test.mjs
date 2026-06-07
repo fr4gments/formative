@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import { createPocMusic, sampleBytebeat, sampleFloatAudio, sampleFloatLayers } from "../src/engines/poc-music.js";
 import { effectsFromProgram } from "../src/engines/poc-float-audio.js";
+import { legacyProgramView } from "../src/engines/program-view.js";
 import { parseIkalProgram } from "../src/parser/ikal-parser.js";
 
 const kal = { root: "k", motion: "STA", number: "UPX", matter: "NRM", suffixes: [] };
@@ -66,6 +67,7 @@ assert.deepEqual(effectsFromProgram(kal), {
   driveAmount: 0,
   ghostAmount: 0,
   jitterAmount: 0,
+  reverbAmount: 0,
 });
 
 assert.equal(effectsFromProgram(susTx).bitcrushAmount > effectsFromProgram(kal).bitcrushAmount, true);
@@ -90,6 +92,102 @@ assert.equal(tearEffects.jitterAmount > 0.5, true);
 
 const distortionEffects = effectsFromProgram(parseIkalProgram("affrala").sequence[0]);
 assert.equal(distortionEffects.driveAmount > 0.7, true);
+
+const affixedIntensityEffects = effectsFromProgram(parseIkalProgram("ļtaloţma").sequence[0]);
+assert.equal(affixedIntensityEffects.driveAmount > effectsFromProgram(parseIkalProgram("ļtala").sequence[0]).driveAmount, true);
+
+const affixedDegradationEffects = effectsFromProgram(parseIkalProgram("ļtalařča").sequence[0]);
+assert.equal(affixedDegradationEffects.bitcrushAmount > 0.6, true);
+assert.equal(affixedDegradationEffects.jitterAmount > 0.2, true);
+
+const dryClick = parseIkalProgram("ļtala").sequence[0];
+const reverbClick = parseIkalProgram("ļtalompa").sequence[0];
+assert.equal(legacyProgramView(reverbClick).controls.reverb, 0.7);
+assert.equal(effectsFromProgram(reverbClick).reverbAmount, 0.7);
+assert.notEqual(
+  sampleFloatAudio(0.123, [dryClick], 44100).value,
+  sampleFloatAudio(0.123, [reverbClick], 44100).value,
+);
+
+function controlsFor(text) {
+  return legacyProgramView(parseIkalProgram(text).sequence[0]).controls;
+}
+
+assert.deepEqual(
+  {
+    distortion: controlsFor("affrala(0.1,0.2,0.3)").distortion,
+    drive: controlsFor("affrala(0.1,0.2,0.3)").drive,
+    saturation: controlsFor("affrala(0.1,0.2,0.3)").saturation,
+  },
+  { distortion: 0.1, drive: 0.2, saturation: 0.3 },
+);
+assert.deepEqual(
+  {
+    bitcrush: controlsFor("sčala(0.1,0.2,0.3)").bitcrush,
+    roughness: controlsFor("sčala(0.1,0.2,0.3)").roughness,
+    tear: controlsFor("sčala(0.1,0.2,0.3)").tear,
+  },
+  { bitcrush: 0.2, roughness: 0.3, tear: 0.1 },
+);
+assert.deepEqual(
+  {
+    density: controlsFor("alxružla(0.1,0.2,0.3)").density,
+    ghost: controlsFor("alxružla(0.1,0.2,0.3)").ghost,
+    motion: controlsFor("alxružla(0.1,0.2,0.3)").motion,
+  },
+  { density: 0.2, ghost: 0.3, motion: 0.1 },
+);
+assert.equal(
+  effectsFromProgram(parseIkalProgram("affrala(0,0,1)").sequence[0]).driveAmount >
+    effectsFromProgram(parseIkalProgram("affrala(0,0,0)").sequence[0]).driveAmount,
+  true,
+);
+assert.equal(
+  effectsFromProgram(parseIkalProgram("sčala(0,0.9,0)").sequence[0]).bitcrushAmount >
+    effectsFromProgram(parseIkalProgram("sčala(0,0.1,0)").sequence[0]).bitcrushAmount,
+  true,
+);
+assert.equal(
+  effectsFromProgram(parseIkalProgram("sčala(0,0,0.9)").sequence[0]).jitterAmount >
+    effectsFromProgram(parseIkalProgram("sčala(0,0,0.1)").sequence[0]).jitterAmount,
+  true,
+);
+
+const softDistortion = parseIkalProgram("affrala(0.1)").sequence[0];
+const hardDistortion = parseIkalProgram("affrala(0.9)").sequence[0];
+assert.equal(legacyProgramView(softDistortion).controls.distortion, 0.1);
+assert.equal(legacyProgramView(hardDistortion).controls.distortion, 0.9);
+assert.equal(
+  effectsFromProgram(hardDistortion).driveAmount > effectsFromProgram(softDistortion).driveAmount,
+  true,
+);
+assert.notEqual(
+  sampleFloatAudio(0.123, [softDistortion], 44100).value,
+  sampleFloatAudio(0.123, [hardDistortion], 44100).value,
+);
+
+const softTear = parseIkalProgram("sčala(0.1)").sequence[0];
+const hardTear = parseIkalProgram("sčala(0.9)").sequence[0];
+assert.equal(legacyProgramView(softTear).controls.tear, 0.1);
+assert.equal(legacyProgramView(hardTear).controls.tear, 0.9);
+assert.equal(effectsFromProgram(hardTear).jitterAmount > effectsFromProgram(softTear).jitterAmount, true);
+assert.notEqual(
+  sampleFloatAudio(0.123, [softTear], 44100).value,
+  sampleFloatAudio(0.123, [hardTear], 44100).value,
+);
+
+const quietRoll = parseIkalProgram("alxružla(0.1,0.1,0.1)").sequence[0];
+const intenseRoll = parseIkalProgram("alxružla(0.9,0.9,0.9)").sequence[0];
+assert.equal(legacyProgramView(quietRoll).controls.motion, 0.1);
+assert.equal(legacyProgramView(intenseRoll).controls.motion, 0.9);
+assert.equal(legacyProgramView(quietRoll).controls.density, 0.1);
+assert.equal(legacyProgramView(intenseRoll).controls.density, 0.9);
+assert.equal(legacyProgramView(quietRoll).controls.ghost, 0.1);
+assert.equal(legacyProgramView(intenseRoll).controls.ghost, 0.9);
+assert.notEqual(
+  sampleFloatAudio(0.123, [quietRoll], 44100).value,
+  sampleFloatAudio(0.123, [intenseRoll], 44100).value,
+);
 
 const music = createPocMusic({ win: {} });
 assert.equal(music.getVisualProgram(), null);
