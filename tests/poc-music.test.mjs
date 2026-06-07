@@ -109,6 +109,29 @@ assert.notEqual(
   sampleFloatAudio(0.123, [reverbClick], 44100).value,
 );
 
+const cumulativeAffixProgram = parseIkalProgram("ļtaloţmařčompa");
+assert.equal(cumulativeAffixProgram.sourceSyntax, "ithkuil");
+assert.equal(cumulativeAffixProgram.sequence.length, 1);
+assert.equal(cumulativeAffixProgram.sequence[0].text, "ļtaloţmařčompa");
+assert.equal(cumulativeAffixProgram.sequence[0].params.audioEffects.intensity, 0.7);
+assert.equal(cumulativeAffixProgram.sequence[0].params.audioEffects.degradation, 0.9);
+assert.equal(cumulativeAffixProgram.sequence[0].params.audioEffects.reverb, 0.7);
+assert.equal(legacyProgramView(cumulativeAffixProgram.sequence[0]).controls.reverb, 0.7);
+assert.equal(effectsFromProgram(cumulativeAffixProgram.sequence[0]).bitcrushAmount > 0.6, true);
+
+const sequencedAffixProgram = parseIkalProgram("ļtaloţma ļtalompa");
+assert.equal(sequencedAffixProgram.sourceSyntax, "ithkuil");
+assert.equal(sequencedAffixProgram.sequence.length, 2);
+assert.deepEqual(sequencedAffixProgram.sequence.map((program) => program.text), ["ļtaloţma", "ļtalompa"]);
+assert.equal(sequencedAffixProgram.sequence[0].params.audioEffects.intensity, 0.7);
+assert.equal(sequencedAffixProgram.sequence[0].params.audioEffects.degradation, 0);
+assert.equal(sequencedAffixProgram.sequence[0].params.audioEffects.reverb, 0);
+assert.equal(sequencedAffixProgram.sequence[1].params.audioEffects.intensity, 0);
+assert.equal(sequencedAffixProgram.sequence[1].params.audioEffects.degradation, 0);
+assert.equal(sequencedAffixProgram.sequence[1].params.audioEffects.reverb, 0.7);
+assert.equal(sampleFloatAudio(0.1, sequencedAffixProgram.sequence, 44100).step, 0);
+assert.equal(sampleFloatAudio(0.251, sequencedAffixProgram.sequence, 44100).step, 1);
+
 function controlsFor(text) {
   return legacyProgramView(parseIkalProgram(text).sequence[0]).controls;
 }
