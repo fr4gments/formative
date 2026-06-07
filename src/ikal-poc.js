@@ -1,9 +1,11 @@
+import { createIkalAutocomplete } from "./editor/ikal-autocomplete.js";
 import { createPocAnimation } from "./engines/poc-animation.js";
 import { createPocImage } from "./engines/poc-image.js";
 import { createPocMusic } from "./engines/poc-music.js";
 import { parseIkalProgram } from "./parser/ikal-parser.js";
 
 export function createIkalPocApp({
+  autocompletePanel,
   cmd,
   readout,
   runButton,
@@ -13,6 +15,7 @@ export function createIkalPocApp({
   createMusic = createPocMusic,
   createAnimation = createPocAnimation,
   createImage = createPocImage,
+  createAutocomplete = createIkalAutocomplete,
 }) {
   const music = createMusic();
   const animation = createAnimation({
@@ -21,6 +24,10 @@ export function createIkalPocApp({
     getPrograms: music.getVisualPrograms,
   });
   const image = createImage({ screen });
+  const autocomplete = createAutocomplete({
+    panel: autocompletePanel,
+    textarea: cmd,
+  });
 
   function statsForLayers(layers) {
     return {
@@ -118,6 +125,10 @@ export function createIkalPocApp({
 
   function start() {
     cmd.addEventListener("keydown", (event) => {
+      if (autocomplete.handleKeyDown(event)) {
+        return;
+      }
+
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         lance(cmd.value);
@@ -141,6 +152,7 @@ export function createIkalPocApp({
   }
 
   return {
+    autocomplete,
     imageFixe,
     lance,
     silence,
@@ -150,6 +162,7 @@ export function createIkalPocApp({
 
 export function startIkalPocApp(doc = document) {
   const app = createIkalPocApp({
+    autocompletePanel: doc.getElementById("suggestions"),
     cmd: doc.getElementById("cmd"),
     readout: doc.getElementById("readout"),
     runButton: doc.getElementById("run"),

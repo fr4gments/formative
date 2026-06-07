@@ -77,6 +77,33 @@
     padding: 4px 0;
   }
   #cmd::placeholder { color: #3f6a3a; }
+  #suggestions {
+    position: absolute; left: 36px; right: 16px; bottom: calc(100% + 6px);
+    max-height: 34vh; overflow: auto;
+    border: 1px solid rgba(124,252,106,0.45);
+    background: rgba(5,8,5,0.96);
+    box-shadow: 0 0 18px rgba(0,240,255,0.12), inset 0 0 0 1px rgba(255,47,179,0.08);
+    color: var(--vert); display: flex; flex-direction: column;
+  }
+  #suggestions[hidden] { display: none; }
+  .suggestion {
+    appearance: none; border: 0; border-bottom: 1px solid rgba(124,252,106,0.12);
+    background: transparent; color: inherit; cursor: pointer; font: inherit;
+    display: grid; grid-template-columns: minmax(80px, 11ch) minmax(0, 1fr);
+    gap: 2px 12px; padding: 7px 9px; text-align: left;
+  }
+  .suggestion:last-child { border-bottom: 0; }
+  .suggestion:hover,
+  .suggestion.selected {
+    background: linear-gradient(90deg, rgba(0,240,255,0.16), rgba(255,47,179,0.10));
+    color: #d7ff34;
+  }
+  .suggestion-form { color: #d7ff34; font-weight: bold; }
+  .suggestion-meta { color: #91b58b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .suggestion-sense {
+    grid-column: 1 / -1; color: #6f8a6a; font-size: 12px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   #actions {
     display: flex; gap: 8px; align-items: stretch;
   }
@@ -102,6 +129,7 @@
 
   <div id="prompt">
     <span class="chev">›</span>
+    <div id="suggestions" hidden></div>
     <textarea id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="ļtala alxrasa ačxwuža&#10;pswatļa alxružla affrala" autofocus></textarea>
     <div id="actions">
       <button id="run" type="button" title="Lancer le texte saisi">lancer</button>

@@ -41,7 +41,7 @@ Le parser POC reste disponible en parallele comme filet de securite. Le parser a
 | `affrala` | `ffr` | glitch | distortion | bending/distortion/twisting/warping |
 | `scala` / `sčala` | `sč` | glitch | break-apart | break apart/break into pieces/crumble |
 
-Les variantes ASCII ci-dessus ne sont pas encore implementees comme aliases. Elles sont notees pour l'ergonomie clavier.
+Les variantes ASCII ci-dessus ne sont pas des formes IKAL valides et ne sont pas implementees comme aliases du parser. Elles servent uniquement d'indices de completion : l'editeur peut les reconnaitre pendant la saisie, puis inserer la forme canonique avec diacritiques.
 
 ## Migration POC initiale
 

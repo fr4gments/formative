@@ -31,6 +31,14 @@ pswatļa alxružla affrala
 
 Ces mots appartiennent au vocabulaire IKAL controle. Ils sont verifies par `@zsnout/ithkuil` dans les tests Node, puis reconnus dans le runtime navigateur par l'adaptateur IKAL avant d'etre traduits en `params` et envoyes aux moteurs via un pont temporaire compatible avec les moteurs POC.
 
+## Saisie et completion
+
+Les formes IKAL restent ecrites sous leur romanisation canonique New Ithkuil, avec diacritiques. Les caracteres comme `č`, `ž`, `ļ`, `ř` ou `š` ne sont pas des decorations : ils peuvent changer la racine ou les categories morphologiques du mot.
+
+L'editeur propose donc une completion clavier. On peut taper une approximation ASCII comme `acxwu`, `alxruz`, `ltu`, `scala` ou un ancien indice POC comme `sus` / `sk`; l'interface propose alors la forme canonique correspondante et insere uniquement cette forme, par exemple `ačxwuža`, `alxružla`, `ļtutļa`, `sčala` ou `affrala`.
+
+Ces approximations ne sont pas des alias du langage. Si elles sont lancees telles quelles sans completion, elles restent analysees comme des formes differentes ou non reconnues.
+
 ## Modes prevus
 
 Les modes doivent etre declares par des mots IKAL visibles :

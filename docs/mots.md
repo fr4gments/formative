@@ -14,6 +14,20 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 | Candidat | Mot interessant, mais mapping artistique encore a confirmer. |
 | Transition | Mot POC conserve temporairement pour comparaison. |
 
+## Saisie clavier
+
+La forme affichee dans les titres ci-dessous est la forme IKAL canonique a inserer dans le programme. Les approximations ASCII ne sont pas des alias du langage : elles servent seulement a chercher une suggestion dans l'editeur.
+
+Exemples :
+
+| Taper | Insere |
+| --- | --- |
+| `acxwu` | `ačxwuža` |
+| `alxruz` | `alxružla` |
+| `ltu` | `ļtutļa` |
+| `scala` | `sčala` |
+| `sk` | `affrala` |
+
 ## Modes
 
 ### `alkala`
