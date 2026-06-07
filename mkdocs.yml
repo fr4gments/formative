@@ -1,0 +1,14 @@
+site_name: IKAL
+site_description: Reference du langage IKAL
+docs_dir: docs
+site_dir: site
+nav:
+  - Accueil: index.md
+  - Langage:
+      - Syntaxe: syntaxe.md
+      - Vocabulaire: mots.md
+      - Migration POC: migration-poc.md
+      - Notes techniques: langage.md
+theme:
+  name: mkdocs
+strict: true

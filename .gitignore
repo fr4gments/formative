@@ -1,6 +1,7 @@
 node_modules/
 .venv/
 .idea/
+site/
 
 CLAUDE.md
 ROADMAP.md

@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "docs:build": "uv run --extra docs mkdocs build --strict",
+    "docs:serve": "uv run --extra docs mkdocs serve",
     "test": "node tests/poc-parser.test.mjs && node tests/ithkuil-adapter.test.mjs && node tests/ithkuil-seed-roots.test.mjs && node tests/ithkuil-program-parser.test.mjs && node tests/poc-animation.test.mjs && node tests/poc-image.test.mjs && node tests/poc-music.test.mjs && node tests/ikal-poc.test.mjs",
     "serve": "python -m http.server 8000"
   },

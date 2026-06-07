@@ -1,6 +1,10 @@
-# IKAL - reference de langage
+# Notes techniques du langage
 
-Document de travail. Cette reference suit l'implementation et reste volontairement courte tant que le langage n'est pas stabilise.
+Cette page conserve les notes techniques issues de l'implementation. La reference lisible du langage est repartie dans :
+
+- [Syntaxe](syntaxe.md)
+- [Vocabulaire](mots.md)
+- [Migration POC](migration-poc.md)
 
 ## Etape 2 - vraies formes Ithkuil
 
