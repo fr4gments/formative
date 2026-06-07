@@ -172,4 +172,47 @@ assert.equal(realCalls[2][0], "layers");
 assert.equal(realCalls[2][1][0].sequence[0].params.family, "click");
 assert.equal(realCalls[2][1][1].sequence[0].params.family, "noise");
 
+const routedCalls = [];
+const routedReadout = createElementStub();
+const routedApp = createIkalPocApp({
+  cmd: createElementStub(),
+  readout: routedReadout,
+  runButton: createElementStub(),
+  screen: createElementStub(),
+  stillButton: createElementStub(),
+  createMusic: () => ({
+    clearSequence: () => routedCalls.push("clear"),
+    getVisualProgram: () => null,
+    getVisualPrograms: () => [],
+    setLayers: (nextLayers) => routedCalls.push(["layers", nextLayers]),
+    start: () => routedCalls.push("music-start"),
+  }),
+  createAnimation: ({ getPrograms }) => ({
+    getSize: () => ({ cols: 12, rows: 5 }),
+    pause: () => routedCalls.push("animation-pause"),
+    resume: () => routedCalls.push(["animation-programs", getPrograms().map((program) => program.text)]),
+    start: () => routedCalls.push("animation-start"),
+  }),
+  createImage: () => ({
+    draw: ({ programs }) => routedCalls.push(["image-draw", programs.map((program) => program.text)]),
+  }),
+});
+
+const routedProgram = "alkala:\n  ļtala\nlyala:\n  fřala\nlyula:\n  trala";
+
+routedApp.lance(routedProgram);
+assert.equal(routedReadout.className, "ok");
+assert.equal(routedReadout.textContent, "▶ 3 couches   ·   3 mots superposés");
+assert.deepEqual(routedCalls[0], ["animation-programs", ["trala"]]);
+assert.equal(routedCalls[1], "music-start");
+assert.equal(routedCalls[2][0], "layers");
+assert.deepEqual(routedCalls[2][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
+
+routedApp.imageFixe(routedProgram);
+assert.deepEqual(routedCalls.slice(-3), [
+  "clear",
+  "animation-pause",
+  ["image-draw", ["fřala"]],
+]);
+
 console.log("ikal-poc ok");

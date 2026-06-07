@@ -36,9 +36,26 @@ function wordToProgram(word) {
   };
 }
 
+function groupedLayers(layers) {
+  return {
+    animationLayers: layers.filter((layer) => layer.mode === "animation"),
+    imageLayers: layers.filter((layer) => layer.mode === "image"),
+    musicLayers: layers.filter((layer) => layer.mode === "music"),
+  };
+}
+
+function firstSequence(layers, musicLayers) {
+  return musicLayers[0]?.sequence || layers[0]?.sequence || [];
+}
+
 function lineToLayer(layer) {
   return {
+    bodyText: layer.bodyText ?? layer.text,
     diagnostics: layer.diagnostics,
+    implicitMode: layer.implicitMode ?? true,
+    mode: layer.mode || "music",
+    modeToken: layer.modeToken || null,
+    modeWord: layer.modeWord || null,
     sequence: layer.words
       .filter((word) => word.params && word.params.role !== "mode")
       .map(wordToProgram),
@@ -51,8 +68,27 @@ export function parseIkalProgram(text) {
   const poc = parsePocProgramme(text);
 
   if (!poc.error) {
+    if (poc.stop) {
+      return {
+        ...poc,
+        sourceSyntax: "poc",
+      };
+    }
+
+    const layers = (poc.layers || [{ sequence: poc.sequence, text: poc.text }]).map((layer) => ({
+      ...layer,
+      bodyText: layer.text,
+      implicitMode: true,
+      mode: "music",
+      modeToken: null,
+    }));
+
     return {
       ...poc,
+      animationLayers: layers,
+      imageLayers: layers,
+      layers,
+      musicLayers: layers,
       sourceSyntax: "poc",
     };
   }
@@ -72,6 +108,13 @@ export function parseIkalProgram(text) {
   }
 
   const layers = ithkuil.layers.map(lineToLayer);
+
+  if (layers.length === 0) {
+    return {
+      error: "aucune couche IKAL exploitable",
+    };
+  }
+
   const emptyLayerIndex = layers.findIndex((layer) => layer.sequence.length === 0);
 
   if (emptyLayerIndex >= 0) {
@@ -82,10 +125,13 @@ export function parseIkalProgram(text) {
     };
   }
 
+  const groups = groupedLayers(layers);
+
   return {
     diagnostics: ithkuil.diagnostics,
     layers,
-    sequence: layers[0].sequence,
+    ...groups,
+    sequence: firstSequence(layers, groups.musicLayers),
     sourceSyntax: "ithkuil",
     text: ithkuil.text,
     words: ithkuil.words,

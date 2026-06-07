@@ -18,10 +18,11 @@ export function createIkalPocApp({
   createAutocomplete = createIkalAutocomplete,
 }) {
   const music = createMusic();
+  let activeAnimationLayers = [];
   const animation = createAnimation({
     screen,
-    getProgram: music.getVisualProgram,
-    getPrograms: music.getVisualPrograms,
+    getProgram: () => firstProgramsForLayers(activeAnimationLayers)[0] || null,
+    getPrograms: () => firstProgramsForLayers(activeAnimationLayers),
   });
   const image = createImage({ screen });
   const autocomplete = createAutocomplete({
@@ -42,7 +43,31 @@ export function createIkalPocApp({
       .filter(Boolean);
   }
 
+  function layersForResult(result) {
+    const layers = result.layers || [{ sequence: result.sequence || [], text: result.text || "" }];
+    const hasTypedLayers = Array.isArray(result.musicLayers) ||
+      Array.isArray(result.imageLayers) ||
+      Array.isArray(result.animationLayers);
+
+    if (!hasTypedLayers) {
+      return {
+        allLayers: layers,
+        animationLayers: layers,
+        imageLayers: layers,
+        musicLayers: layers,
+      };
+    }
+
+    return {
+      allLayers: layers,
+      animationLayers: result.animationLayers || [],
+      imageLayers: result.imageLayers || [],
+      musicLayers: result.musicLayers || [],
+    };
+  }
+
   function silence() {
+    activeAnimationLayers = [];
     music.clearSequence();
     animation.resume();
     readout.textContent = "— silence —";
@@ -63,13 +88,15 @@ export function createIkalPocApp({
       return;
     }
 
-    const layers = result.layers || [{ sequence: result.sequence, text: result.text }];
+    const routedLayers = layersForResult(result);
+    const layers = routedLayers.allLayers;
+    activeAnimationLayers = routedLayers.animationLayers;
     animation.resume();
     Promise.resolve(music.start()).catch((error) => {
       readout.textContent = "✗ audio : " + error.message;
       readout.className = "err";
     });
-    music.setLayers(layers);
+    music.setLayers(routedLayers.musicLayers);
 
     if (layers.length === 1 && result.sequence.length === 1) {
       const p = result.sequence[0];
@@ -102,11 +129,12 @@ export function createIkalPocApp({
     }
 
     music.clearSequence();
+    activeAnimationLayers = [];
     animation.pause();
 
     const { cols, rows } = animation.getSize();
-    const layers = result.layers || [{ sequence: result.sequence, text: result.text }];
-    const programs = firstProgramsForLayers(layers);
+    const routedLayers = layersForResult(result);
+    const programs = firstProgramsForLayers(routedLayers.imageLayers);
 
     image.draw({
       cols,
@@ -116,6 +144,8 @@ export function createIkalPocApp({
 
     if (programs.length === 1) {
       readout.textContent = "▣ image fixe : " + programs[0].text + "   →   " + programs[0].gloss;
+    } else if (programs.length === 0) {
+      readout.textContent = "▣ image fixe : aucune couche lyala:";
     } else {
       readout.textContent = "▣ image fixe : " + programs.length + " couches superposées";
     }

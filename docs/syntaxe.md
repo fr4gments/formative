@@ -51,7 +51,29 @@ Les modes doivent etre declares par des mots IKAL visibles :
 | `lyala:` | image fixe | creating a visual design manually |
 | `lyula:` | animation | visual design with Function DYN |
 
-La ponctuation `:` marque une declaration de couche. Elle n'est pas encore branchee dans le parser applicatif.
+La ponctuation `:` marque un en-tete de bloc. Les lignes suivantes appartiennent a ce mode jusqu'au prochain en-tete de mode. Le parser applicatif route ensuite ces lignes par mode :
+
+- les couches `alkala:` alimentent le moteur audio ;
+- les couches `lyala:` alimentent le rendu image fixe ;
+- les couches `lyula:` alimentent l'animation.
+
+Chaque ligne d'instructions sous un en-tete reste une couche : mots espaces = sequence, lignes multiples sous le meme en-tete = couches superposees dans ce mode.
+
+Une ligne IKAL sans declaration de mode reste temporairement une couche musique implicite, pour garder les exemples existants utilisables pendant la transition. L'en-tete de mode doit etre seul sur sa ligne ; les instructions vont sur les lignes suivantes. L'indentation est obligatoire comme convention de lecture.
+
+Exemple :
+
+```ikal
+alkala:
+  ļtala ļtalompa
+  alxrasa
+
+lyala:
+  fřala ftala
+
+lyula:
+  trala glala
+```
 
 ## Effets audio gradues
 

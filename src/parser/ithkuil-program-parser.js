@@ -3,6 +3,13 @@ import { userParamsFromPositionals } from "./ikal-param-signatures.js";
 import { seedRootForIthkuil } from "./ithkuil-seed-roots.js";
 import { paramsForIthkuilWord } from "./ithkuil-to-params.js";
 
+const DEFAULT_LAYER_MODE = "music";
+const MODE_DECLARATIONS = new Map([
+  ["alkala", "music"],
+  ["lyala", "image"],
+  ["lyula", "animation"],
+]);
+
 function diagnostic({ code, line, message, severity = "warning", token }) {
   return {
     code,
@@ -49,6 +56,43 @@ function tokenizeLine(text) {
   }
 
   return { tokens };
+}
+
+function parseModeDeclaration(line, lineNumber) {
+  const match = /^([^\s:]+):\s*(.*)$/.exec(line);
+
+  if (!match) {
+    return null;
+  }
+
+  const modeToken = match[1];
+  const mode = MODE_DECLARATIONS.get(modeToken);
+
+  if (!mode) {
+    return {
+      error: "déclaration de mode invalide : « " + modeToken + ": » (attendu : alkala:, lyala: ou lyula:)",
+    };
+  }
+
+  const modeResult = analyzeIthkuilToken(modeToken, lineNumber);
+
+  if (modeResult.error) {
+    return {
+      error: modeResult.error,
+    };
+  }
+
+  if (match[2].trim()) {
+    return {
+      error: "déclaration de mode invalide : « " + modeToken + ": » doit être seule sur sa ligne",
+    };
+  }
+
+  return {
+    mode,
+    modeToken,
+    modeWord: modeResult.word,
+  };
 }
 
 function parsePositionValue(text) {
@@ -215,28 +259,61 @@ export function parseIthkuilProgram(text) {
 
   const lines = source
     .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+    .map((raw, index) => ({
+      lineNumber: index + 1,
+      raw,
+      text: raw.trim(),
+    }))
+    .filter((line) => line.text);
   const diagnostics = [];
   const layers = [];
+  let activeMode = DEFAULT_LAYER_MODE;
+  let activeModeToken = null;
+  let activeModeWord = null;
+  let activeModeImplicit = true;
 
   for (let i = 0; i < lines.length; i++) {
-    const lineNumber = i + 1;
+    const line = lines[i];
+    const declaration = parseModeDeclaration(line.text, line.lineNumber);
+
+    if (declaration?.error) {
+      return {
+        error: lines.length === 1 ? declaration.error : "ligne " + line.lineNumber + " : " + declaration.error,
+      };
+    }
+
+    if (declaration) {
+      activeMode = declaration.mode;
+      activeModeToken = declaration.modeToken;
+      activeModeWord = declaration.modeWord;
+      activeModeImplicit = false;
+      continue;
+    }
+
+    if (!activeModeImplicit && !/^\s/.test(line.raw)) {
+      const error = "instruction de bloc non indentée : « " + line.text + " »";
+
+      return {
+        error: lines.length === 1 ? error : "ligne " + line.lineNumber + " : " + error,
+      };
+    }
+
     const words = [];
-    const tokenized = tokenizeLine(lines[i]);
+    const body = line.text;
+    const tokenized = body ? tokenizeLine(body) : { tokens: [] };
 
     if (tokenized.error) {
       return {
-        error: lines.length === 1 ? tokenized.error : "ligne " + lineNumber + " : " + tokenized.error,
+        error: lines.length === 1 ? tokenized.error : "ligne " + line.lineNumber + " : " + tokenized.error,
       };
     }
 
     for (const token of tokenized.tokens) {
-      const result = analyzeIthkuilToken(token, lineNumber);
+      const result = analyzeIthkuilToken(token, line.lineNumber);
 
       if (result.error) {
         return {
-          error: lines.length === 1 ? result.error : "ligne " + lineNumber + " : " + result.error,
+          error: lines.length === 1 ? result.error : "ligne " + line.lineNumber + " : " + result.error,
         };
       }
 
@@ -245,8 +322,13 @@ export function parseIthkuilProgram(text) {
     }
 
     layers.push({
+      bodyText: body,
       diagnostics: words.flatMap((word) => word.diagnostics),
-      text: lines[i],
+      implicitMode: activeModeImplicit,
+      mode: activeMode,
+      modeToken: activeModeToken,
+      modeWord: activeModeWord,
+      text: line.text,
       words,
     });
   }
@@ -254,7 +336,7 @@ export function parseIthkuilProgram(text) {
   return {
     diagnostics,
     layers,
-    text: lines.join("\n"),
+    text: lines.map((line) => line.text).join("\n"),
     words: layers.flatMap((layer) => layer.words),
   };
 }

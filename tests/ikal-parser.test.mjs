@@ -9,6 +9,9 @@ assert.equal(poc.error, undefined);
 assert.equal(poc.sourceSyntax, "poc");
 assert.equal(poc.sequence.length, 2);
 assert.equal(poc.sequence[0].root, "k");
+assert.equal(poc.musicLayers.length, 1);
+assert.equal(poc.imageLayers.length, 1);
+assert.equal(poc.animationLayers.length, 1);
 
 const one = parseIkalProgram("ļtala");
 assert.equal(one.error, undefined);
@@ -102,9 +105,61 @@ assert.equal(layers.sourceSyntax, "ithkuil");
 assert.equal(layers.layers.length, 2);
 assert.equal(layers.layers[0].sequence.length, 2);
 assert.equal(layers.layers[1].sequence.length, 2);
+assert.equal(layers.layers[0].mode, "music");
+assert.equal(layers.layers[0].implicitMode, true);
+assert.equal(layers.musicLayers.length, 2);
+assert.equal(layers.imageLayers.length, 0);
+assert.equal(layers.animationLayers.length, 0);
 assert.deepEqual(
   layers.layers.map((layer) => layer.sequence[0].params.family),
   ["click", "noise"],
+);
+
+const declaredModeLayers = parseIkalProgram("alkala:\n  ļtala\nlyala:\n  fřala\nlyula:\n  trala");
+assert.equal(declaredModeLayers.error, undefined);
+assert.equal(declaredModeLayers.sourceSyntax, "ithkuil");
+assert.equal(declaredModeLayers.layers.length, 3);
+assert.deepEqual(
+  declaredModeLayers.layers.map((layer) => layer.mode),
+  ["music", "image", "animation"],
+);
+assert.deepEqual(
+  declaredModeLayers.layers.map((layer) => layer.modeToken),
+  ["alkala", "lyala", "lyula"],
+);
+assert.deepEqual(
+  declaredModeLayers.musicLayers.map((layer) => layer.sequence[0].text),
+  ["ļtala"],
+);
+assert.deepEqual(
+  declaredModeLayers.imageLayers.map((layer) => layer.sequence[0].text),
+  ["fřala"],
+);
+assert.deepEqual(
+  declaredModeLayers.animationLayers.map((layer) => layer.sequence[0].text),
+  ["trala"],
+);
+assert.equal(declaredModeLayers.sequence[0].text, "ļtala");
+
+const declaredModeBlocks = parseIkalProgram("alkala:\n  ļtala ļtalompa\n  alxrasa\nlyala:\n  fřala\nlyula:\n  trala");
+assert.equal(declaredModeBlocks.error, undefined);
+assert.equal(declaredModeBlocks.sourceSyntax, "ithkuil");
+assert.equal(declaredModeBlocks.layers.length, 4);
+assert.deepEqual(
+  declaredModeBlocks.layers.map((layer) => layer.mode),
+  ["music", "music", "image", "animation"],
+);
+assert.deepEqual(
+  declaredModeBlocks.musicLayers.map((layer) => layer.sequence.map((program) => program.text)),
+  [["ļtala", "ļtalompa"], ["alxrasa"]],
+);
+assert.deepEqual(
+  declaredModeBlocks.imageLayers.map((layer) => layer.sequence.map((program) => program.text)),
+  [["fřala"]],
+);
+assert.deepEqual(
+  declaredModeBlocks.animationLayers.map((layer) => layer.sequence.map((program) => program.text)),
+  [["trala"]],
 );
 
 const withModeWord = parseIkalProgram("alkala ļtala");
@@ -124,6 +179,18 @@ assert.equal(
 assert.equal(
   parseIkalProgram("alkala").error,
   "aucun mot IKAL exploitable dans la ligne",
+);
+assert.equal(
+  parseIkalProgram("alkala:").error,
+  "aucune couche IKAL exploitable",
+);
+assert.equal(
+  parseIkalProgram("alkala: ļtala").error,
+  "déclaration de mode invalide : « alkala: » doit être seule sur sa ligne",
+);
+assert.equal(
+  parseIkalProgram("alkala:\nļtala").error,
+  "ligne 2 : instruction de bloc non indentée : « ļtala »",
 );
 
 console.log("ikal-parser ok");

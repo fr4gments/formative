@@ -84,6 +84,18 @@ La prochaine tranche ne generalise pas les effets a tout le visuel. Elle cible s
 
 Voir [Effets audio](effets-audio.md) pour les affixes retenus `ITY`, `MDL`, `FRC`, `OPF`, `FLS` et `DTS`.
 
+## Etape 5 - modes de couches
+
+Les declarations `alkala:`, `lyala:` et `lyula:` sont maintenant lues comme des en-tetes de bloc. Elles ne produisent pas un evenement artistique dans la sequence : elles typent les lignes d'instructions qui suivent jusqu'au prochain en-tete de mode.
+
+Le parser applicatif conserve `layers` pour l'ordre global du programme, puis expose aussi :
+
+- `musicLayers` pour les couches `alkala:` ;
+- `imageLayers` pour les couches `lyala:` ;
+- `animationLayers` pour les couches `lyula:`.
+
+Une ligne IKAL sans declaration reste temporairement une couche `music` implicite. Cette compatibilite sera retiree ou transformee en diagnostic quand la syntaxe par modes sera suffisamment installee.
+
 ## Pont temporaire vers les moteurs
 
 Les moteurs audio / image / animation actuels savent lire les programmes IKAL avec `params`, mais ils passent encore par une vue de compatibilite dans `src/engines/program-view.js`.
