@@ -190,7 +190,11 @@ const routedApp = createIkalPocApp({
   createAnimation: ({ getPrograms }) => ({
     getSize: () => ({ cols: 12, rows: 5 }),
     pause: () => routedCalls.push("animation-pause"),
-    resume: () => routedCalls.push(["animation-programs", getPrograms().map((program) => program.text)]),
+    resume: () => routedCalls.push([
+      "animation-programs",
+      getPrograms(0).map((program) => program.text),
+      getPrograms(24).map((program) => program.text),
+    ]),
     start: () => routedCalls.push("animation-start"),
   }),
   createImage: () => ({
@@ -198,15 +202,15 @@ const routedApp = createIkalPocApp({
   }),
 });
 
-const routedProgram = "alkala:\n  ļtala\nlyala:\n  fřala\nlyula:\n  trala";
+const routedProgram = "alkala:\n  ļtala\nlyala:\n  fřala ftala\nlyula:\n  trala glala";
 
 routedApp.lance(routedProgram);
 assert.equal(routedReadout.className, "ok");
 assert.equal(
   routedReadout.textContent,
-  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 1 mot   ·   animation 1 couche / 1 mot   ·   visuel animation",
+  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 2 mots   ·   animation 1 couche / 2 mots   ·   visuel animation",
 );
-assert.deepEqual(routedCalls[0], ["animation-programs", ["trala"]]);
+assert.deepEqual(routedCalls[0], ["animation-programs", ["trala"], ["glala"]]);
 assert.equal(routedCalls[1], "music-start");
 assert.equal(routedCalls[2][0], "layers");
 assert.deepEqual(routedCalls[2][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
@@ -215,19 +219,19 @@ routedApp.imageFixe(routedProgram);
 assert.deepEqual(routedCalls.slice(-3), [
   "clear",
   "animation-pause",
-  ["image-draw", ["fřala"]],
+  ["image-draw", ["fřala", "ftala"]],
 ]);
 
-const imageLastProgram = "alkala:\n  ļtala\nlyula:\n  trala\nlyala:\n  fřala";
+const imageLastProgram = "alkala:\n  ļtala\nlyula:\n  trala glala\nlyala:\n  fřala ftala";
 routedApp.lance(imageLastProgram);
 assert.equal(routedReadout.className, "ok");
 assert.equal(
   routedReadout.textContent,
-  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 1 mot   ·   animation 1 couche / 1 mot   ·   visuel image",
+  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 2 mots   ·   animation 1 couche / 2 mots   ·   visuel image",
 );
 const imageLastTail = routedCalls.slice(-4);
 assert.deepEqual(imageLastTail[0], "animation-pause");
-assert.deepEqual(imageLastTail[1], ["image-draw", ["fřala"]]);
+assert.deepEqual(imageLastTail[1], ["image-draw", ["fřala", "ftala"]]);
 assert.equal(imageLastTail[2], "music-start");
 assert.equal(imageLastTail[3][0], "layers");
 assert.deepEqual(imageLastTail[3][1].map((layer) => layer.sequence[0].text), ["ļtala"]);

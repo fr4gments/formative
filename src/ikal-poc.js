@@ -21,8 +21,8 @@ export function createIkalPocApp({
   let activeAnimationLayers = [];
   const animation = createAnimation({
     screen,
-    getProgram: () => firstProgramsForLayers(activeAnimationLayers)[0] || null,
-    getPrograms: () => firstProgramsForLayers(activeAnimationLayers),
+    getProgram: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame)[0] || null,
+    getPrograms: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame),
   });
   const image = createImage({ screen });
   const autocomplete = createAutocomplete({
@@ -57,9 +57,25 @@ export function createIkalPocApp({
     ].join("   ·   ");
   }
 
-  function firstProgramsForLayers(layers) {
+  function allProgramsForLayers(layers) {
     return layers
-      .map((layer) => layer.sequence[0])
+      .flatMap((layer) => layer.sequence)
+      .filter(Boolean);
+  }
+
+  function animationProgramsForLayers(layers, frame = 0) {
+    const step = Math.floor(frame / 24);
+
+    return layers
+      .map((layer) => {
+        const sequence = layer.sequence || [];
+
+        if (sequence.length === 0) {
+          return null;
+        }
+
+        return sequence[step % sequence.length];
+      })
       .filter(Boolean);
   }
 
@@ -108,7 +124,7 @@ export function createIkalPocApp({
       image.draw({
         cols,
         rows,
-        programs: firstProgramsForLayers(routedLayers.imageLayers),
+        programs: allProgramsForLayers(routedLayers.imageLayers),
       });
       return "image";
     }
@@ -190,7 +206,7 @@ export function createIkalPocApp({
 
     const { cols, rows } = animation.getSize();
     const routedLayers = layersForResult(result);
-    const programs = firstProgramsForLayers(routedLayers.imageLayers);
+    const programs = allProgramsForLayers(routedLayers.imageLayers);
 
     image.draw({
       cols,
@@ -203,7 +219,10 @@ export function createIkalPocApp({
     } else if (programs.length === 0) {
       readout.textContent = "▣ image fixe : aucune couche lyala:";
     } else {
-      readout.textContent = "▣ image fixe : " + programs.length + " couches superposées";
+      readout.textContent = "▣ image fixe : " +
+        formatCount(routedLayers.imageLayers.length, "couche", "couches") +
+        " / " +
+        formatCount(programs.length, "mot", "mots");
     }
 
     readout.className = "ok";

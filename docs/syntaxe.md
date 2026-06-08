@@ -44,7 +44,7 @@ plusieurs mots sur une ligne = une sequence
 plusieurs lignes sous le meme mode = couches superposees dans ce mode
 ```
 
-Dans une ligne, les mots forment une sequence. Plusieurs lignes sous un meme mode sont superposees. Cote musique, cette sequence est deja consommee par le moteur audio. Cote image fixe et animation, la composition intra-ligne est le prochain point a corriger : le rendu visuel utilise encore principalement le premier mot de chaque couche.
+Dans une ligne, les mots forment une sequence. Plusieurs lignes sous un meme mode sont superposees. Cote musique, cette sequence est consommee par le moteur audio. Cote image fixe, les mots d'une meme ligne sont combines dans une composition statique. Cote animation, les mots d'une meme ligne forment une sequence temporelle.
 
 ## Mots actuellement executables
 

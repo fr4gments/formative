@@ -484,8 +484,8 @@ export function createPocAnimation({ screen, getProgram, getPrograms, win = wind
 
   function dessine() {
     const programs = typeof getPrograms === "function"
-      ? getPrograms()
-      : normalizePrograms(getProgram());
+      ? getPrograms(frame)
+      : normalizePrograms(getProgram?.(frame));
     applyVisualStyle(screen, programs, frame);
     screen.textContent = renderAsciiFrame({
       cols,

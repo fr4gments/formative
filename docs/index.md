@@ -17,7 +17,7 @@ La version en cours travaille l'etape 5 : blocs de modes stricts, routage par mo
 - les effets audio sont definis comme des affixes Ithkuil gradues sur les formes sonores reconnues ;
 - les declarations `alkala:`, `lyala:`, `lyula:` isolent les couches musique / image fixe / animation ;
 - l'interface route l'audio, l'image fixe et l'animation par mode, avec autocompletion filtree selon le bloc courant ;
-- prochaine limite a corriger : les moteurs visuels ne consomment pas encore toute la sequence d'une ligne.
+- les moteurs visuels consomment maintenant toute la sequence de chaque ligne : composition statique en `lyala:`, sequence temporelle en `lyula:`.
 
 ## Lire ensuite
 

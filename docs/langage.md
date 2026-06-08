@@ -102,7 +102,7 @@ Le parser applicatif signale aussi les mots incompatibles avec le mode de leur b
 
 L'autocompletion utilise la meme logique de compatibilite : la position du curseur determine le bloc courant, puis les suggestions sont filtrees pour `music`, `image` ou `animation`. Les formes audio affixees ne sont proposees que dans `alkala:`. Les mots d'image fixe ne sont pas proposes dans `lyula:` sauf compatibilite explicite, et inversement pour les mots d'animation dans `lyala:`.
 
-Limite actuelle : les moteurs visuels ne consomment pas encore toute la sequence d'une ligne. `lyala:` et `lyula:` sont routes par mode, mais la composition intra-couche visuelle reste a implementer.
+Les moteurs visuels consomment maintenant toute la sequence de chaque couche : `lyala:` combine les mots d'une ligne dans une image fixe, tandis que `lyula:` avance dans les mots de la ligne comme une sequence temporelle d'animation.
 
 ## Pont temporaire vers les moteurs
 
