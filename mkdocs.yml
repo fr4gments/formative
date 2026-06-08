@@ -12,5 +12,9 @@ nav:
       - Effets audio: effets-audio.md
       - Notes techniques: langage.md
 theme:
-  name: mkdocs
+  name: material
+  language: fr
+  features:
+    - navigation.sections
+    - content.code.copy
 strict: true
