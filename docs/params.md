@@ -17,6 +17,7 @@ forme Ithkuil
   -> ithkuil
   -> baseParams        // valeurs derivees du sens du mot
   + audioEffects       // effets audio derives des affixes gradues
+  + visualEffects      // effets visuels derives des mots image / glitch
   -> params            // valeurs finales envoyees aux moteurs
 ```
 
@@ -28,6 +29,7 @@ IKAL distinguera trois niveaux :
 | --- | --- | --- |
 | `baseParams` | sens Ithkuil parse : racine, Function, Ca, etc. | donne les valeurs par defaut motivees linguistiquement |
 | `audioEffects` | affixes audio gradues sur le formative sonore | module les effets audio du meme evenement |
+| `visualEffects` | mots image fixe / glitch mappes depuis leur sens | module lumiere, couleur, forme, texture, filaments, diffusion, traces et deformation visuelle |
 | `params` | resolution finale | objet envoye aux moteurs image / animation / musique |
 
 Regle de conception : un effet IKAL ne doit pas transformer un mot en autre chose. Il peut intensifier, attenuer ou preciser les effets derives du mot, mais la famille semantique reste portee par la forme Ithkuil.
@@ -38,6 +40,7 @@ Le modele de parametres distingue :
 
 - `baseParams` : valeurs derivees du sens Ithkuil ;
 - `audioEffects` : effets audio declares par affixes ;
+- `visualEffects` : effets visuels declares par les mots image fixe et glitch ;
 - `params` : valeurs finales resolues.
 
 `params` garde la structure suivante :
@@ -53,9 +56,9 @@ Le modele de parametres distingue :
     randomModulation: 0,
     reverb: 0
   },
-  role: "mode" | "voice" | "modifier",
+  role: "mode" | "voice" | "modifier" | "primitive",
   domain: "music" | "image" | "animation" | "visual" | "glitch",
-  family: "music" | "visual-design" | "click" | "roll" | "noise" | "breath" | "break-apart" | "distortion",
+  family: "music" | "visual-design" | "click" | "roll" | "noise" | "breath" | "light" | "color" | "shape" | "texture" | "filament" | "cloud" | "trace" | "spark-scatter" | "break-apart" | "distortion",
   mode: "music" | "image" | "animation" | null,
   motion: {
     function: "STA" | "DYN",
@@ -81,6 +84,19 @@ Le modele de parametres distingue :
     roughness: 0,
     saturation: 0,
     tear: 0
+  },
+  visualEffects: {
+    brightness: 0,
+    chroma: 0,
+    contrast: 0,
+    diffusion: 0,
+    deformation: 0,
+    fracture: 0,
+    glow: 0,
+    strands: 0,
+    structure: 0,
+    texture: 0,
+    trails: 0
   }
 }
 ```
@@ -120,6 +136,10 @@ Ces regles calculent les valeurs par defaut de `baseParams`. Les effets audio ca
 | `llw` | `light` | modifier |
 | `fř` | `shape` | modifier |
 | `ft` | `texture` | modifier |
+| `vt` | `filament` | primitive |
+| `fth` | `cloud` | primitive |
+| `mzm` | `trace` | primitive |
+| `tçv` | `spark-scatter` | primitive |
 | `tr` | `linear-motion` | modifier |
 | `gl` | `random-motion` | modifier |
 
@@ -152,6 +172,21 @@ Ces regles calculent les valeurs par defaut de `baseParams`. Les effets audio ca
 | `distortion` | `distortion`, `drive`, `saturation` |
 | `color` | `saturation` |
 | `texture` | rugosite visuelle |
+
+### Famille vers effets visuels
+
+| Famille | Effets visuels principaux |
+| --- | --- |
+| `light` | luminosite, glow, contraste clair |
+| `color` | chroma / intensite chromatique |
+| `shape` | structure, contour, organisation de forme |
+| `texture` | grain visuel, rugosite de surface |
+| `filament` | lignes organiques, fibres, structure filamenteuse |
+| `cloud` | diffusion, masse brumeuse, glow doux |
+| `trace` | trainees, marques residuelles |
+| `spark-scatter` | eclats lumineux, dispersion, fracture fine |
+| `distortion` | deformation visuelle, chroma secondaire |
+| `break-apart` | fracture visuelle, texture de rupture |
 
 ## Diagnostics
 

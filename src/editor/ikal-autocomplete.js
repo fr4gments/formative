@@ -127,11 +127,13 @@ function inspectionTokenAt(value, caret) {
 
 function aliasesForRoot(root) {
   const migrationAliases = (root.migrationFrom || []).map(asciiFold);
+  const searchAliases = (root.aliases || []).map(asciiFold);
 
   return [
     asciiFold(root.form),
     ...migrationAliases,
     ...migrationAliases.map((alias) => alias.replace(/^-+/, "")),
+    ...searchAliases,
   ];
 }
 

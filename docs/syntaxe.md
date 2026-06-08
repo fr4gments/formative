@@ -18,7 +18,8 @@ alkala:
   alxrasa
 
 lyala:
-  fřala ftala
+  fřala ftala špala allwala
+  avtala ufthala amzmala etçvala
 
 lyula:
   trala glala
@@ -56,7 +57,8 @@ alkala:
   pswatļa alxružla
 
 lyala:
-  fřala affrala
+  fřala ftala špala allwala
+  avtala ufthala amzmala etçvala
 ```
 
 Ces mots appartiennent au vocabulaire IKAL controle. Ils sont verifies par `@zsnout/ithkuil` dans les tests Node, puis reconnus dans le runtime navigateur par l'adaptateur IKAL avant d'etre traduits en `params` et envoyes aux moteurs via un pont temporaire compatible avec les moteurs POC.
@@ -102,7 +104,8 @@ alkala:
   alxrasa
 
 lyala:
-  fřala ftala
+  fřala ftala špala allwala
+  avtala ufthala amzmala etçvala
 
 lyula:
   trala glala

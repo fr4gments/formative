@@ -20,6 +20,56 @@ const PALETTES = {
     [219, 255, 52],
     [255, 255, 220],
   ],
+  "break-apart": [
+    [255, 47, 179],
+    [0, 239, 255],
+    [255, 255, 220],
+  ],
+  cloud: [
+    [66, 32, 116],
+    [0, 221, 255],
+    [255, 238, 183],
+  ],
+  color: [
+    [0, 239, 255],
+    [255, 47, 179],
+    [255, 186, 67],
+  ],
+  distortion: [
+    [108, 63, 255],
+    [255, 47, 179],
+    [255, 186, 67],
+  ],
+  filament: [
+    [12, 255, 194],
+    [255, 47, 179],
+    [255, 245, 179],
+  ],
+  light: [
+    [232, 255, 198],
+    [0, 239, 255],
+    [255, 255, 255],
+  ],
+  shape: [
+    [91, 141, 255],
+    [0, 239, 255],
+    [236, 252, 255],
+  ],
+  "spark-scatter": [
+    [255, 186, 67],
+    [0, 239, 255],
+    [255, 255, 255],
+  ],
+  texture: [
+    [71, 255, 137],
+    [255, 186, 67],
+    [255, 86, 193],
+  ],
+  trace: [
+    [0, 239, 255],
+    [255, 47, 179],
+    [255, 186, 67],
+  ],
   rest: [
     [67, 255, 113],
     [124, 252, 106],
@@ -31,19 +81,40 @@ const ACCENTS = {
   k: [255, 47, 179],
   r: [0, 239, 255],
   s: [255, 47, 179],
+  "break-apart": [255, 186, 67],
+  cloud: [255, 238, 183],
+  color: [219, 255, 52],
+  distortion: [0, 239, 255],
+  filament: [255, 245, 179],
+  light: [255, 47, 179],
+  shape: [255, 47, 179],
+  "spark-scatter": [255, 255, 255],
+  texture: [0, 239, 255],
+  trace: [255, 186, 67],
   rest: [0, 239, 255],
 };
 
 const ZERO_CONTROLS = {
   bitcrush: 0,
+  brightness: 0,
+  chroma: 0,
+  contrastBoost: 0,
+  diffusion: 0,
+  deformation: 0,
   density: 0,
   distortion: 0,
   drive: 0,
+  fracture: 0,
   ghost: 0,
+  glow: 0,
   motion: 0,
   roughness: 0,
   saturation: 0,
+  strands: 0,
+  structure: 0,
   tear: 0,
+  trails: 0,
+  visualTexture: 0,
 };
 
 function bruit(x, y, s) {
@@ -75,12 +146,14 @@ function colorToCss(color) {
 
 function paletteForProgram(program) {
   const view = legacyProgramView(program);
-  return view ? PALETTES[view.root] || PALETTES.rest : PALETTES.rest;
+  const family = view?.params?.family;
+  return view ? PALETTES[family] || PALETTES[view.root] || PALETTES.rest : PALETTES.rest;
 }
 
 function accentForProgram(program) {
   const view = legacyProgramView(program);
-  return view ? ACCENTS[view.root] || ACCENTS.rest : ACCENTS.rest;
+  const family = view?.params?.family;
+  return view ? ACCENTS[family] || ACCENTS[view.root] || ACCENTS.rest : ACCENTS.rest;
 }
 
 function normalizePrograms(program, programs) {
@@ -100,11 +173,18 @@ function controlsForProgram(p) {
 }
 
 function distortionLevel(controls) {
-  return clamp(controls.distortion * 0.65 + controls.drive * 0.40 + controls.saturation * 0.28, 0, 1);
+  return clamp(
+    controls.distortion * 0.65 +
+    controls.drive * 0.40 +
+    controls.saturation * 0.28 +
+    controls.deformation * 0.72,
+    0,
+    1,
+  );
 }
 
 function tearLevel(controls) {
-  return clamp(controls.tear + controls.bitcrush * 0.55, 0, 1);
+  return clamp(controls.tear + controls.bitcrush * 0.55 + controls.fracture * 0.76, 0, 1);
 }
 
 function glitchLevel(p) {
@@ -124,6 +204,10 @@ function glitchLevel(p) {
 
   level += controls.ghost * 0.09;
   level += controls.roughness * 0.10;
+  level += controls.visualTexture * 0.13;
+  level += controls.diffusion * 0.04;
+  level += controls.strands * 0.06;
+  level += controls.trails * 0.06;
   level += distortionLevel(controls) * 0.15;
   level += tearLevel(controls) * 0.33;
 
@@ -143,7 +227,11 @@ function champBruit(x, y, f, p) {
     Math.sin(y * 0.30 - move * 0.8) +
     Math.sin((x + y) * 0.15 + move * 1.2);
   const grain = bruit(x, y, Math.round(f * controls.motion * 0.5));
-  const dose = clamp(0.08 + controls.density * 0.32 + controls.roughness * 0.12, 0.08, 0.58);
+  const dose = clamp(
+    0.08 + controls.density * 0.32 + controls.roughness * 0.12 + controls.visualTexture * 0.24,
+    0.08,
+    0.68,
+  );
   return ((onde + 3) / 6) * (1 - dose) + grain * dose;
 }
 
@@ -180,17 +268,124 @@ function champRoulement(x, y, f, p) {
   return v;
 }
 
+function champHalo(x, y, f, controls) {
+  const cx = x - 44;
+  const cy = y - 20;
+  const radius = Math.sqrt(cx * cx + cy * cy);
+  const ring = 1 - clamp(Math.abs(radius - 13 - Math.sin(f * 0.018) * controls.motion * 2.2) / 8.5, 0, 1);
+  const aura = clamp(1 - radius / 34, 0, 1);
+  const shimmer = 0.5 + 0.5 * Math.sin(radius * 0.74 + x * 0.05 - y * 0.04 + f * 0.04);
+
+  return clamp(aura * 0.48 + ring * (0.42 + controls.glow * 0.26) + shimmer * controls.glow * 0.18, 0, 1);
+}
+
+function champFilament(x, y, f, controls) {
+  const drift = f * 0.018 * controls.motion;
+  const fold = Math.sin(y * 0.16 + drift) * 3.4 + Math.sin((x + y) * 0.045 - drift) * 4.2;
+  const strandA = 1 - Math.abs(Math.sin((x + fold) * 0.38));
+  const strandB = 1 - Math.abs(Math.sin((x * 0.16 - y * 0.31) + fold * 0.18));
+  const fiber = Math.max(Math.pow(strandA, 8), Math.pow(strandB, 10));
+  const fray = bruit(x, y, 503 + (f >> 3)) * (0.24 + controls.visualTexture * 0.34);
+
+  return clamp(fiber * (0.72 + controls.strands * 0.22) + fray, 0, 1);
+}
+
+function champNuage(x, y, f, controls) {
+  const drift = f * 0.012 * controls.motion;
+  const large = 0.5 + 0.5 * Math.sin(x * 0.075 + Math.sin(y * 0.13 + drift) * 2.7);
+  const soft = 0.5 + 0.5 * Math.cos(y * 0.11 - drift + Math.sin(x * 0.09) * 2.3);
+  const grain = bruit(Math.floor(x / 2), Math.floor(y / 2), 613 + (f >> 4));
+  const mass = (large * 0.38 + soft * 0.40 + grain * 0.22);
+  const haze = clamp((mass - 0.28) * 1.25, 0, 1);
+
+  return clamp(haze * (0.78 + controls.diffusion * 0.18) + grain * controls.diffusion * 0.16, 0, 1);
+}
+
+function champTrace(x, y, f, controls) {
+  const drift = f * 0.026 * controls.motion;
+  const diagonal = Math.abs(((x + y * 1.72 + drift) % 26) - 13);
+  const curve = Math.abs(Math.sin(x * 0.07 + y * 0.18 + drift) * 5.0);
+  const band = 1 - clamp((diagonal + curve * 0.35) / 7.2, 0, 1);
+  const erasure = bruit(x, y, 727) < 0.18 + controls.visualTexture * 0.28 ? 0.38 : 1;
+
+  return clamp(Math.pow(band, 1.65) * erasure + controls.trails * 0.12, 0, 1);
+}
+
+function champEclats(x, y, f, controls) {
+  const seed = 811 + Math.floor(f * controls.motion * 0.2);
+  const point = bruit(x, y, seed);
+  const shard = point > 0.935 - controls.fracture * 0.05 ? 1 : 0;
+  const diagonal = Math.abs(((x * 1.9 - y + seed * 0.03) % 17) - 8.5);
+  const streak = diagonal < 1.2 && bruit(Math.floor(x / 3), Math.floor(y / 2), seed + 17) > 0.62 ? 0.76 : 0;
+  const spark = Math.max(shard, streak);
+
+  return clamp(spark * (0.82 + controls.glow * 0.16) + bruit(x, y, seed + 31) * 0.08, 0, 1);
+}
+
+function champMatiere(x, y, f, controls) {
+  const grain = bruit(x, y, 941 + (f >> 5));
+  const weave = 0.5 + 0.5 * Math.sin(x * 0.7 + Math.sin(y * 0.23) * 1.5);
+  const stain = 0.5 + 0.5 * Math.cos((x - y) * 0.17 + grain * 2.5);
+
+  return clamp(grain * 0.44 + weave * controls.visualTexture * 0.32 + stain * 0.26, 0, 1);
+}
+
+function champPrimitiveOrganique(x, y, f, view) {
+  const family = view.params?.family;
+  const controls = view.controls;
+
+  if (family === "light") {
+    return champHalo(x, y, f, controls);
+  }
+
+  if (family === "filament") {
+    return champFilament(x, y, f, controls);
+  }
+
+  if (family === "cloud") {
+    return champNuage(x, y, f, controls);
+  }
+
+  if (family === "trace") {
+    return champTrace(x, y, f, controls);
+  }
+
+  if (family === "spark-scatter") {
+    return champEclats(x, y, f, controls);
+  }
+
+  if (family === "texture") {
+    return champMatiere(x, y, f, controls);
+  }
+
+  return null;
+}
+
 function champVal(x, y, f, p) {
   const view = legacyProgramView(p);
-  let v = view.root === "s"
-    ? champBruit(x, y, f, p)
-    : view.root === "k"
-      ? champClic(x, y, f, p)
-      : champRoulement(x, y, f, p);
-
   const controls = view.controls;
+  let v = champPrimitiveOrganique(x, y, f, view);
+
+  if (v === null) {
+    v = view.root === "s"
+      ? champBruit(x, y, f, p)
+      : view.root === "k"
+        ? champClic(x, y, f, p)
+        : champRoulement(x, y, f, p);
+  }
+
   const tear = tearLevel(controls);
   const distortion = distortionLevel(controls);
+  const structure = controls.structure || 0;
+
+  if (structure > 0) {
+    const cx = x - 44;
+    const cy = y - 20;
+    const radial = Math.abs(Math.sin(Math.sqrt(cx * cx + cy * cy) * 0.19));
+    const contour = Math.abs(Math.sin(x * 0.18) - Math.cos(y * 0.24));
+    const shaped = clamp(1 - Math.min(radial, contour), 0, 1);
+    v = v * (1 - structure * 0.48) + shaped * structure * 0.48;
+  }
 
   if (tear > 0) {
     const torn = 1 - v;
@@ -328,17 +523,20 @@ export function glyphe(x, y, f, p) {
 export function glyphColor(x, y, f, p) {
   const view = legacyProgramView(p);
   const palette = paletteForProgram(p);
+  const controls = view?.controls || ZERO_CONTROLS;
   const depth = p ? clamp(champVal(x, y, f, p), 0, 1) : bruit(x, y, f >> 3);
-  const grad = clamp((x + y * 0.8) / 90 + depth * 0.65, 0, 1);
+  const chromaWave = Math.sin(x * 0.13 + y * 0.21 + f * 0.02) * controls.chroma * 0.22;
+  const grad = clamp((x + y * 0.8) / 90 + depth * 0.65 + chromaWave, 0, 1);
   const base = grad < 0.5
     ? mixColor(palette[0], palette[1], grad * 2)
     : mixColor(palette[1], palette[2], (grad - 0.5) * 2);
-  const ghost = 1 - (view?.controls.ghost || 0) * 0.42;
+  const ghost = 1 - controls.ghost * 0.42;
+  const light = controls.brightness * 0.28;
 
   return [
-    Math.round(base[0] * ghost),
-    Math.round(base[1] * ghost),
-    Math.round(base[2] * ghost),
+    clamp(Math.round(base[0] * ghost + 255 * light), 0, 255),
+    clamp(Math.round(base[1] * ghost + 255 * light), 0, 255),
+    clamp(Math.round(base[2] * ghost + 255 * light), 0, 255),
   ];
 }
 
@@ -354,9 +552,9 @@ export function visualStyleForProgram(program, frame = 0) {
   const pulse = bruit(frame, frame >> 2, 211);
   const jitter = pulse > 0.82 ? level : level * 0.22;
   const rootTilt = view?.root === "k" ? -22 : view?.root === "s" ? 18 : 6;
-  const hot = mixColor(palette[1], palette[2], 0.54 + sk * 0.40);
+  const hot = mixColor(palette[1], palette[2], clamp(0.54 + sk * 0.40 + controls.brightness * 0.18, 0, 1));
   const edge = mixColor(accent, palette[2], clamp(0.42 - tx * 0.30 - sk * 0.14, 0.08, 0.42));
-  const speed = 0.52 + controls.motion * 1.83 + level * 1.25 + tx * 1.15;
+  const speed = 0.52 + controls.motion * 1.83 + level * 1.25 + tx * 1.15 + controls.trails * 0.26;
   const shift = ((frame * speed) % 140 - 20).toFixed(2) + "%";
   const drift = ((frame * (0.28 + controls.motion * 1.07 + level)) % 120 - 10).toFixed(2) + "%";
   const angle = (105 + rootTilt + Math.sin(frame * 0.045) * (8 + level * 22)).toFixed(2) + "deg";
@@ -364,7 +562,9 @@ export function visualStyleForProgram(program, frame = 0) {
   const stopB = (34 + level * 12 + pulse * 8).toFixed(2) + "%";
   const stopC = (58 + sk * 9 - tx * 5 + pulse * 5).toFixed(2) + "%";
   const stopD = (78 + level * 8).toFixed(2) + "%";
-  const glow = tx > sk && tx > 0.2
+  const glow = controls.glow > 0.35
+    ? "rgba(" + hot[0] + "," + hot[1] + "," + hot[2] + ",0.94)"
+    : tx > sk && tx > 0.2
     ? "rgba(255,47,179,0.92)"
     : sk > 0.2
       ? "rgba(255,186,67,0.86)"
@@ -389,10 +589,24 @@ export function visualStyleForProgram(program, frame = 0) {
     "--ikal-red-x": chroma,
     "--ikal-cyan-x": cyan,
     "--ikal-skew": skew,
-    "--ikal-contrast": (1.08 + level * 0.42 + sk * 0.12 + controls.roughness * 0.10).toFixed(2),
-    "--ikal-saturate": (1.18 + level * 0.95 + tx * 0.30 + controls.saturation * 0.42).toFixed(2),
+    "--ikal-contrast": (
+      1.08 +
+      level * 0.42 +
+      sk * 0.12 +
+      controls.roughness * 0.10 +
+      controls.contrastBoost * 0.46 +
+      controls.structure * 0.12
+    ).toFixed(2),
+    "--ikal-saturate": (
+      1.18 +
+      level * 0.95 +
+      tx * 0.30 +
+      controls.saturation * 0.42 +
+      controls.chroma * 0.78 +
+      controls.glow * 0.22
+    ).toFixed(2),
     "--ikal-scan": (0.12 + level * 0.18).toFixed(2),
-    "--ikal-band-alpha": (0.16 + level * 0.26 + tx * 0.10).toFixed(2),
+    "--ikal-band-alpha": (0.16 + level * 0.26 + tx * 0.10 + controls.diffusion * 0.05 + controls.strands * 0.05).toFixed(2),
   };
 }
 

@@ -120,6 +120,11 @@ assert.equal(suggestIkalWords("reverb", { mode: "music" })[0].form, "ļtalompa")
 assert.equal(suggestIkalWords("reverb", { mode: "image" }).length, 0);
 assert.equal(suggestIkalWords("fr", { mode: "image" })[0].form, "fřala");
 assert.equal(suggestIkalWords("fr", { mode: "animation" }).some((suggestion) => suggestion.form === "fřala"), false);
+assert.equal(suggestIkalWords("nuage", { mode: "image" })[0].form, "ufthala");
+assert.equal(suggestIkalWords("filament", { mode: "image" })[0].form, "avtala");
+assert.equal(suggestIkalWords("eclat", { mode: "image" })[0].form, "etçvala");
+assert.equal(suggestIkalWords("nuage", { mode: "music" }).length, 0);
+assert.equal(suggestIkalWords("nuage", { mode: "animation" }).length, 0);
 assert.equal(suggestIkalWords("tr", { mode: "animation" })[0].form, "trala");
 assert.equal(suggestIkalWords("tr", { mode: "image" }).some((suggestion) => suggestion.form === "trala"), false);
 assert.equal(suggestIkalWords("affr", { mode: "music" })[0].form, "affrala");

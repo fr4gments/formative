@@ -39,6 +39,10 @@ Le parser POC reste disponible en parallele pour la migration et les tests histo
 | `pswatļa` | `psw` | musique | ghost-breath | respiration/breathing, essence RPV |
 | `frala` / `fřala` | `fř` | image | shape | shape/form/figure |
 | `ftala` | `ft` | image | texture | touch/feel/texture |
+| `avtala` | `vt` | image | filament | stringy/thread-like texture |
+| `ufthala` | `fth` | image | cloud | cloud in the sky, stem 3 |
+| `amzmala` | `mzm` | image | trace | trace/vestige left by a previous state |
+| `etçvala` | `tçv` | image | spark-scatter | scattering/dispersed fragments, stem 2 |
 | `affrala` | `ffr` | glitch | distortion | bending/distortion/twisting/warping |
 | `scala` / `sčala` | `sč` | glitch | break-apart | break apart/break into pieces/crumble |
 

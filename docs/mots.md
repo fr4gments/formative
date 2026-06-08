@@ -27,6 +27,9 @@ Exemples :
 | `ltu` | `ļtutļa` |
 | `scala` | `sčala` |
 | `sk` | `affrala` |
+| `nuage` | `ufthala` |
+| `filament` | `avtala` |
+| `eclat` | `etçvala` |
 
 ## Modes
 
@@ -210,17 +213,17 @@ Exemples :
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Candidat |
+| Statut | Retenu |
 | Racine | `llw` |
 | Domaine IKAL | image |
 | Sens Ithkuil retenu | light/illumination/brightness |
-| Effet attendu | luminosite, glow, contraste clair |
+| Effet attendu | halo lumineux, lueur, glow, contraste clair |
 
 ### `špala`
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Candidat |
+| Statut | Retenu |
 | Racine | `šp` |
 | Domaine IKAL | image |
 | Sens Ithkuil retenu | color |
@@ -230,7 +233,7 @@ Exemples :
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Candidat |
+| Statut | Retenu |
 | Racine | `fř` |
 | Domaine IKAL | image |
 | Sens Ithkuil retenu | shape/form/figure |
@@ -240,11 +243,57 @@ Exemples :
 
 | Champ | Valeur |
 | --- | --- |
-| Statut | Candidat |
+| Statut | Retenu |
 | Racine | `ft` |
 | Domaine IKAL | image |
 | Sens Ithkuil retenu | touch/feel/texture |
-| Effet attendu | grain, rugosite, texture visuelle |
+| Effet attendu | matiere, grain, rugosite, texture visuelle |
+
+### `avtala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Retenu |
+| Racine | `vt` |
+| Domaine IKAL | image |
+| Sens Ithkuil retenu | stringy/thread-like texture |
+| Alias de completion | `filament`, `filaments` |
+| Effet attendu | filaments, fibres, lignes organiques entrelacees |
+
+### `ufthala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Retenu |
+| Racine | `fth` |
+| Stem | `3` |
+| Domaine IKAL | image |
+| Sens Ithkuil retenu | cloud in the sky / cloud-like atmospheric mass |
+| Alias de completion | `nuage`, `nuages` |
+| Effet attendu | masse diffuse, brume, nuage colore |
+
+### `amzmala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Retenu |
+| Racine | `mzm` |
+| Domaine IKAL | image |
+| Sens Ithkuil retenu | trace/vestige left by a previous state |
+| Alias de completion | `trace`, `traces` |
+| Effet attendu | traces, residus, marques persistantes |
+
+### `etçvala`
+
+| Champ | Valeur |
+| --- | --- |
+| Statut | Retenu |
+| Racine | `tçv` |
+| Stem | `2` |
+| Domaine IKAL | image |
+| Sens Ithkuil retenu | scattering/dispersed fragments |
+| Alias de completion | `eclat`, `eclats` |
+| Effet attendu | eclats, particules, fragments lumineux disperses |
 
 ## Rupture / glitch
 

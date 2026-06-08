@@ -25,6 +25,7 @@ export const IKAL_SEED_ROOTS = [
     sense: "visual design/artistic representation with dynamic function",
   },
   {
+    aliases: ["halo", "lumiere", "lueur"],
     cr: "llw",
     domain: "visual",
     family: "light",
@@ -33,6 +34,7 @@ export const IKAL_SEED_ROOTS = [
     sense: "light/illumination/brightness",
   },
   {
+    aliases: ["couleur"],
     cr: "šp",
     domain: "visual",
     family: "color",
@@ -150,6 +152,7 @@ export const IKAL_SEED_ROOTS = [
     sense: "respiration/breathing/panting/gasping, representative",
   },
   {
+    aliases: ["forme"],
     cr: "fř",
     domain: "image",
     family: "shape",
@@ -158,12 +161,51 @@ export const IKAL_SEED_ROOTS = [
     sense: "shape/form/figure",
   },
   {
+    aliases: ["matiere", "matieres"],
     cr: "ft",
     domain: "image",
     family: "texture",
     form: "ftala",
     section: "4.5.5 Tactile Sense",
     sense: "touch/feel/texture",
+  },
+  {
+    aliases: ["filament", "filaments"],
+    cr: "vt",
+    domain: "image",
+    family: "filament",
+    form: "avtala",
+    section: "4.5.5 Tactile Sense",
+    sense: "stringy/thread-like texture",
+  },
+  {
+    aliases: ["nuage", "nuages"],
+    cr: "fth",
+    domain: "image",
+    family: "cloud",
+    form: "ufthala",
+    section: "6.3 Physics and Cosmological/Astronomical Phenomena",
+    sense: "cloud in the sky / cloud-like atmospheric mass",
+    stem: 3,
+  },
+  {
+    aliases: ["trace", "traces"],
+    cr: "mzm",
+    domain: "image",
+    family: "trace",
+    form: "amzmala",
+    section: "2.0 Common States and Acts",
+    sense: "trace/vestige left by a previous state",
+  },
+  {
+    aliases: ["eclat", "eclats"],
+    cr: "tçv",
+    domain: "image",
+    family: "spark-scatter",
+    form: "etçvala",
+    section: "2.0 Common States and Acts",
+    sense: "scattering/dispersed fragments or visual éclats",
+    stem: 2,
   },
   {
     cr: "ffr",
@@ -219,8 +261,14 @@ export function seedRootForIthkuil(ithkuil) {
 function rootMatchesIthkuil(root, ithkuil) {
   const expectedFunction = root.function || "STA";
   const actualFunction = ithkuil.function || "STA";
+  const expectedStem = root.stem || 1;
+  const actualStem = ithkuil.stem || ithkuil.parsed?.stem || 1;
 
   if (expectedFunction !== actualFunction) {
+    return false;
+  }
+
+  if (expectedStem !== actualStem) {
     return false;
   }
 
@@ -234,5 +282,5 @@ function rootMatchesIthkuil(root, ithkuil) {
 }
 
 function rootSpecificity(root) {
-  return (root.function ? 1 : 0) + Object.keys(root.ca || {}).length;
+  return (root.function ? 1 : 0) + (root.stem ? 1 : 0) + Object.keys(root.ca || {}).length;
 }

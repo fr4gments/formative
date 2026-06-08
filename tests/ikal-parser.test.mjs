@@ -162,6 +162,17 @@ assert.deepEqual(
   [["trala"]],
 );
 
+const imageVocabulary = parseIkalProgram("lyala:\n  fřala ftala špala allwala avtala ufthala amzmala etçvala");
+assert.equal(imageVocabulary.error, undefined);
+assert.deepEqual(
+  imageVocabulary.imageLayers[0].sequence.map((program) => program.text),
+  ["fřala", "ftala", "špala", "allwala", "avtala", "ufthala", "amzmala", "etçvala"],
+);
+assert.deepEqual(
+  imageVocabulary.imageLayers[0].sequence.map((program) => program.params.family),
+  ["shape", "texture", "color", "light", "filament", "cloud", "trace", "spark-scatter"],
+);
+
 const withModeWord = parseIkalProgram("alkala ļtala");
 assert.equal(withModeWord.error, undefined);
 assert.equal(withModeWord.sequence.length, 1);
@@ -203,6 +214,10 @@ assert.equal(
 assert.equal(
   parseIkalProgram("lyula:\n  fřala").error,
   "ligne 2 : mot « fřala » du domaine image incompatible avec le mode animation",
+);
+assert.equal(
+  parseIkalProgram("alkala:\n  avtala").error,
+  "ligne 2 : mot « avtala » du domaine image incompatible avec le mode music",
 );
 
 console.log("ikal-parser ok");

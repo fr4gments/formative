@@ -14,8 +14,10 @@ assert.equal(IKAL_SEED_ROOTS.length >= 10, true);
 assert.equal(seedRootForCr("lk").form, "alkala");
 assert.equal(seedRootForForm("lyula").cr, "ly");
 assert.equal(seedRootForForm("lyula").function, "DYN");
+assert.equal(seedRootForForm("ufthala").stem, 3);
 assert.equal(seedRootForIthkuil({ root: "ly", function: "DYN" }).form, "lyula");
 assert.equal(seedRootForIthkuil({ root: "ly", function: "STA" }).form, "lyala");
+assert.equal(seedRootForIthkuil({ root: "fth", function: "STA", stem: 3 }).form, "ufthala");
 assert.equal(seedRootForIthkuil({ root: "ļt", function: "DYN", ca: { essence: "RPV" } }).form, "ļtutļa");
 assert.equal(seedRootForIthkuil({ root: "lxr", function: "DYN", ca: { configuration: "MFC", essence: "RPV" } }).form, "alxružla");
 assert.equal(seedRootForIthkuil({ root: "kš", function: "STA" }), undefined);
@@ -37,6 +39,7 @@ for (const candidate of IKAL_SEED_ROOTS) {
   const generated = wordToIthkuil({
     type: "UNF/C",
     root: candidate.cr,
+    ...(candidate.stem ? { stem: candidate.stem } : {}),
     ...(candidate.function ? { function: candidate.function } : {}),
     ...(candidate.ca ? { ca: candidate.ca } : {}),
   });

@@ -40,6 +40,7 @@ function glossesForSeed(seed) {
 function formativeFromSeed(source, seed, overrides = {}) {
   const ca = clonePlain(seed.ca || {});
   const fn = seed.function || "STA";
+  const stem = seed.stem || 1;
   const slotVAffixes = clonePlain(overrides.slotVAffixes || []);
   const slotVIIAffixes = clonePlain(overrides.slotVIIAffixes || []);
   const parsed = {
@@ -52,7 +53,7 @@ function formativeFromSeed(source, seed, overrides = {}) {
     slotVAffixes,
     slotVIIAffixes,
     specification: "BSC",
-    stem: 1,
+    stem,
     type: "UNF/C",
   };
   const glosses = glossesForSeed(seed);
@@ -160,9 +161,11 @@ export function parseIthkuilWord(text) {
 
 export function generateIthkuilWord(word) {
   const fn = word.function || "STA";
+  const stem = word.stem || 1;
   const seed = IKAL_SEED_ROOTS.find((candidate) => (
     candidate.cr === word.root
     && (candidate.function || "STA") === fn
+    && (candidate.stem || 1) === stem
     && matchesCa(candidate.ca, word.ca)
   ));
 

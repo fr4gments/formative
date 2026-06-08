@@ -72,6 +72,50 @@ assert.equal(distortion.role, "modifier");
 assert.equal(distortion.family, "distortion");
 assert.equal(distortion.effects.distortion > 0.8, true);
 assert.equal(distortion.effects.drive > 0.7, true);
+assert.equal(distortion.visualEffects.deformation > 0.4, true);
+
+const light = paramsForForm("allwala");
+assert.equal(light.role, "modifier");
+assert.equal(light.family, "light");
+assert.equal(light.visualEffects.brightness > 0.7, true);
+assert.equal(light.visualEffects.glow > 0.6, true);
+
+const color = paramsForForm("špala");
+assert.equal(color.role, "modifier");
+assert.equal(color.family, "color");
+assert.equal(color.visualEffects.chroma > 0.8, true);
+
+const shape = paramsForForm("fřala");
+assert.equal(shape.role, "modifier");
+assert.equal(shape.family, "shape");
+assert.equal(shape.visualEffects.structure > 0.7, true);
+
+const texture = paramsForForm("ftala");
+assert.equal(texture.role, "modifier");
+assert.equal(texture.family, "texture");
+assert.equal(texture.visualEffects.texture > 0.7, true);
+
+const filament = paramsForForm("avtala");
+assert.equal(filament.role, "primitive");
+assert.equal(filament.family, "filament");
+assert.equal(filament.visualEffects.strands > 0.8, true);
+
+const cloud = paramsForForm("ufthala");
+assert.equal(cloud.role, "primitive");
+assert.equal(cloud.family, "cloud");
+assert.equal(cloud.lexical.stem, 3);
+assert.equal(cloud.visualEffects.diffusion > 0.8, true);
+
+const trace = paramsForForm("amzmala");
+assert.equal(trace.role, "primitive");
+assert.equal(trace.family, "trace");
+assert.equal(trace.visualEffects.trails > 0.8, true);
+
+const sparkScatter = paramsForForm("etçvala");
+assert.equal(sparkScatter.role, "primitive");
+assert.equal(sparkScatter.family, "spark-scatter");
+assert.equal(sparkScatter.lexical.stem, 2);
+assert.equal(sparkScatter.visualEffects.fracture > 0.5, true);
 
 const musicMode = paramsForForm("alkala");
 assert.equal(musicMode.role, "mode");

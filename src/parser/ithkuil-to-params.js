@@ -20,6 +20,20 @@ const ZERO_EFFECTS = {
   tear: 0,
 };
 
+const ZERO_VISUAL_EFFECTS = {
+  brightness: 0,
+  chroma: 0,
+  contrast: 0,
+  diffusion: 0,
+  deformation: 0,
+  fracture: 0,
+  glow: 0,
+  strands: 0,
+  structure: 0,
+  texture: 0,
+  trails: 0,
+};
+
 const ROOT_PARAM_RULES = {
   lk: { family: "music", mode: "music", role: "mode" },
   ly: { family: "visual-design", role: "mode" },
@@ -27,6 +41,10 @@ const ROOT_PARAM_RULES = {
   šp: { family: "color", role: "modifier" },
   tr: { family: "linear-motion", role: "modifier" },
   gl: { family: "random-motion", role: "modifier" },
+  fth: { family: "cloud", role: "primitive" },
+  mzm: { family: "trace", role: "primitive" },
+  tçv: { family: "spark-scatter", role: "primitive" },
+  vt: { family: "filament", role: "primitive" },
   čxw: { family: "noise", role: "voice" },
   bj: { family: "impact", role: "voice" },
   ļt: { family: "click", role: "voice" },
@@ -49,6 +67,20 @@ const FAMILY_EFFECTS = {
   noise: { roughness: 0.78 },
   roll: { roughness: 0.16 },
   texture: { roughness: 0.5 },
+};
+
+const FAMILY_VISUAL_EFFECTS = {
+  "break-apart": { fracture: 0.45, texture: 0.24 },
+  cloud: { brightness: 0.24, chroma: 0.16, diffusion: 0.86, glow: 0.28, texture: 0.62 },
+  color: { chroma: 0.86, contrast: 0.12 },
+  distortion: { chroma: 0.28, deformation: 0.45, glow: 0.22 },
+  filament: { chroma: 0.24, contrast: 0.18, strands: 0.9, structure: 0.34, texture: 0.28 },
+  light: { brightness: 0.72, contrast: 0.24, glow: 0.66 },
+  shape: { contrast: 0.22, structure: 0.78 },
+  "spark-scatter": { brightness: 0.54, chroma: 0.44, contrast: 0.24, fracture: 0.58, glow: 0.46 },
+  texture: { contrast: 0.12, texture: 0.74 },
+  trace: { contrast: 0.3, structure: 0.22, trails: 0.84, texture: 0.24 },
+  "visual-design": { chroma: 0.18, structure: 0.3 },
 };
 
 const CONFIGURATION_PARAMS = {
@@ -75,6 +107,18 @@ function clamp01(value) {
 
 function mergeEffects(...effects) {
   const merged = { ...ZERO_EFFECTS };
+
+  for (const effect of effects) {
+    for (const [key, value] of Object.entries(effect || {})) {
+      merged[key] = clamp01((merged[key] || 0) + value);
+    }
+  }
+
+  return merged;
+}
+
+function mergeVisualEffects(...effects) {
+  const merged = { ...ZERO_VISUAL_EFFECTS };
 
   for (const effect of effects) {
     for (const [key, value] of Object.entries(effect || {})) {
@@ -284,6 +328,10 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
     affixParams.effects,
     representation.ghost ? { bitcrush: 0.08, drive: 0.08 } : null,
   );
+  const visualEffects = mergeVisualEffects(
+    FAMILY_VISUAL_EFFECTS[family],
+    representation.ghost ? { glow: 0.18 } : null,
+  );
   const baseParams = {
     audioEffects: affixParams.audioEffects,
     domain: seedRoot.domain,
@@ -305,6 +353,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
     role,
     source: ithkuil.source,
     version: IKAL_PARAMS_VERSION,
+    visualEffects,
   };
   const resolved = resolveIkalParams(baseParams, userParams);
 

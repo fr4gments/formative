@@ -18,6 +18,7 @@ La version en cours travaille l'etape 5 : blocs de modes stricts, routage par mo
 - les declarations `alkala:`, `lyala:`, `lyula:` isolent les couches musique / image fixe / animation ;
 - l'interface route l'audio, l'image fixe et l'animation par mode, avec autocompletion filtree selon le bloc courant ;
 - les moteurs visuels consomment maintenant toute la sequence de chaque ligne : composition statique en `lyala:`, sequence temporelle en `lyula:`.
+- l'image fixe dispose d'une premiere surface organique : lumiere/halo, couleur, forme, matiere, filaments, nuages, traces, eclats et glitch statique.
 
 ## Lire ensuite
 

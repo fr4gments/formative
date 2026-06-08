@@ -119,6 +119,18 @@ const ikalStyle = visualStyleForProgram(parseIkalProgram("affrala").sequence[0],
 assert.equal(Number(ikalStyle["--ikal-saturate"]) > 1, true);
 assert.equal(Number(ikalStyle["--ikal-contrast"]) > 1, true);
 
+const shapeOnly = parseIkalProgram("lyala:\n  fřala").imageLayers[0].sequence;
+const richStill = parseIkalProgram("lyala:\n  fřala ftala špala allwala avtala ufthala amzmala etçvala").imageLayers[0].sequence;
+const shapeOnlyFrame = renderAsciiFrame({ cols: 16, rows: 6, frame: 12, programs: shapeOnly });
+const richStillFrame = renderAsciiFrame({ cols: 16, rows: 6, frame: 12, programs: richStill });
+const richStillStyle = visualStyleForPrograms(richStill, 12);
+assert.notEqual(richStillFrame, shapeOnlyFrame);
+assert.equal(Number(richStillStyle["--ikal-saturate"]) > Number(visualStyleForPrograms(shapeOnly, 12)["--ikal-saturate"]), true);
+
+const organicFamilies = ["avtala", "ufthala", "amzmala", "etçvala"].map((word) => parseIkalProgram("lyala:\n  " + word).imageLayers[0].sequence[0]);
+const organicFrames = organicFamilies.map((program) => renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program }));
+assert.equal(new Set(organicFrames).size, organicFrames.length);
+
 const softDistortion = parseIkalProgram("affrala(0.1)").sequence[0];
 const hardDistortion = parseIkalProgram("affrala(0.9)").sequence[0];
 const softDistortionStyle = visualStyleForProgram(softDistortion, 12);
