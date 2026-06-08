@@ -1,14 +1,10 @@
 import { parseIthkuilWord } from "./ithkuil-adapter.js";
 import { userParamsFromPositionals } from "./ikal-param-signatures.js";
+import { modeForDeclaration } from "./ikal-mode-compatibility.js";
 import { seedRootForIthkuil } from "./ithkuil-seed-roots.js";
 import { paramsForIthkuilWord } from "./ithkuil-to-params.js";
 
 const DEFAULT_LAYER_MODE = "music";
-const MODE_DECLARATIONS = new Map([
-  ["alkala", "music"],
-  ["lyala", "image"],
-  ["lyula", "animation"],
-]);
 
 function diagnostic({ code, line, message, severity = "warning", token }) {
   return {
@@ -66,7 +62,7 @@ function parseModeDeclaration(line, lineNumber) {
   }
 
   const modeToken = match[1];
-  const mode = MODE_DECLARATIONS.get(modeToken);
+  const mode = modeForDeclaration(modeToken);
 
   if (!mode) {
     return {
@@ -325,6 +321,7 @@ export function parseIthkuilProgram(text) {
       bodyText: body,
       diagnostics: words.flatMap((word) => word.diagnostics),
       implicitMode: activeModeImplicit,
+      line: line.lineNumber,
       mode: activeMode,
       modeToken: activeModeToken,
       modeWord: activeModeWord,

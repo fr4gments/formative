@@ -1,6 +1,6 @@
 # Syntaxe
 
-Cette page decrit la syntaxe IKAL telle qu'elle est visee et l'etat actuellement branche dans l'interface.
+Cette page decrit la syntaxe IKAL branchee dans l'interface, plus les surfaces encore transitoires.
 
 ## Principe
 
@@ -10,7 +10,7 @@ Chaque forme IKAL est choisie comme une vraie forme New Ithkuil. Le sens du mot 
 
 ## Couches
 
-L'editeur multi-lignes suit la regle validee a l'etape 1 :
+L'editeur multi-lignes suit la regle suivante :
 
 ```ikal
 ligne 1 = couche 1
@@ -18,11 +18,11 @@ ligne 2 = couche 2
 ligne 3 = couche 3
 ```
 
-Dans une ligne, les mots forment une sequence. Plusieurs lignes sont superposees.
+Dans une ligne, les mots forment une sequence. Plusieurs lignes sous un meme mode sont superposees. Cote musique, cette sequence est deja consommee par le moteur audio. Cote image fixe et animation, la composition intra-ligne est le prochain point a corriger : le rendu visuel utilise encore principalement le premier mot de chaque couche.
 
 ## Mots actuellement executables
 
-L'application accepte maintenant les formes IKAL candidates suivantes, en plus du vocabulaire POC temporaire :
+L'application accepte maintenant un vocabulaire IKAL controle, en plus du vocabulaire POC temporaire. Exemples :
 
 ```ikal
 ļtala alxrasa ačxwuža
@@ -41,9 +41,17 @@ Ces approximations ne sont pas des alias du langage. Si elles sont lancees telle
 
 Pour les effets audio affixes, l'editeur propose aussi des formes generees depuis le nom d'affixe, l'effet ou le degre : `ity`, `opf`, `dts`, `dts9`, `degr`, `reverb`, etc. L'inspecteur affiche alors les affixes et degres, par exemple `ITY/7 intensity = 0.7`.
 
-## Modes prevus
+Dans un bloc de mode, la completion devient contextuelle :
 
-Les modes doivent etre declares par des mots IKAL visibles :
+- sous `alkala:`, elle propose les mots audio et les formes audio affixees ;
+- sous `lyala:`, elle propose les mots compatibles avec l'image fixe ;
+- sous `lyula:`, elle propose les mots compatibles avec l'animation.
+
+L'inspecteur affiche aussi les modes compatibles du mot. Les mots communs, comme les premiers mots de glitch, ne sont proposes dans plusieurs modes que parce que cette compatibilite est declaree explicitement.
+
+## Modes
+
+Les modes sont declares par des mots IKAL visibles :
 
 | Mot | Mode | Sens retenu |
 | --- | --- | --- |
@@ -51,7 +59,7 @@ Les modes doivent etre declares par des mots IKAL visibles :
 | `lyala:` | image fixe | creating a visual design manually |
 | `lyula:` | animation | visual design with Function DYN |
 
-La ponctuation `:` marque un en-tete de bloc. Les lignes suivantes appartiennent a ce mode jusqu'au prochain en-tete de mode. Le parser applicatif route ensuite ces lignes par mode :
+La ponctuation `:` marque un en-tete de bloc. Il doit etre seul sur sa ligne. Les lignes indentees suivantes appartiennent a ce mode jusqu'au prochain en-tete de mode. Le parser applicatif route ensuite ces lignes par mode :
 
 - les couches `alkala:` alimentent le moteur audio ;
 - les couches `lyala:` alimentent le rendu image fixe ;
@@ -59,7 +67,12 @@ La ponctuation `:` marque un en-tete de bloc. Les lignes suivantes appartiennent
 
 Chaque ligne d'instructions sous un en-tete reste une couche : mots espaces = sequence, lignes multiples sous le meme en-tete = couches superposees dans ce mode.
 
-Une ligne IKAL sans declaration de mode reste temporairement une couche musique implicite, pour garder les exemples existants utilisables pendant la transition. L'en-tete de mode doit etre seul sur sa ligne ; les instructions vont sur les lignes suivantes. L'indentation est obligatoire comme convention de lecture.
+Une ligne IKAL sans declaration de mode reste temporairement une couche musique implicite, pour garder les exemples existants utilisables pendant la transition. Les instructions d'un bloc explicite doivent etre indentees.
+
+Au lancement, la musique reste toujours separee du visuel : `alkala:` joue en audio. Pour le rendu visuel, le dernier bloc visuel dans l'editeur prend le dessus :
+
+- si le dernier bloc visuel est `lyala:`, l'ecran affiche l'image fixe ;
+- si le dernier bloc visuel est `lyula:`, l'ecran affiche l'animation.
 
 Exemple :
 
@@ -75,9 +88,11 @@ lyula:
   trala glala
 ```
 
+Dans cet exemple, `lyula:` est le dernier bloc visuel : l'animation est donc affichee au lancement. Si `lyala:` etait place apres `lyula:`, l'image fixe prendrait le dessus.
+
 ## Effets audio gradues
 
-La direction validee pour l'etape 4 n'est pas une syntaxe finale `mot(...)`, ni un chainage `mot.effet(...)`.
+La syntaxe canonique des effets audio n'est pas `mot(...)`, ni un chainage `mot.effet(...)`.
 
 Pour les effets audio, la syntaxe cible est morphologique :
 
@@ -99,7 +114,7 @@ Le cadrage est documente dans [Effets audio](effets-audio.md).
 
 ## Prototype de parametres
 
-Le prototype positionnel suivant est actuellement branche pour tester les valeurs continues et l'inspecteur :
+Le prototype positionnel suivant reste branche pour tester les valeurs continues et l'inspecteur :
 
 ```ikal
 alxružla(0.8, 0.95, 0.4)

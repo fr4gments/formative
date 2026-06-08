@@ -2,9 +2,9 @@
 
 Les `params` sont l'interface stable entre la verite linguistique Ithkuil, les effets declares dans le programme IKAL, et les moteurs IKAL. Ils ne remplacent pas l'objet `ithkuil` : ils en sont une traduction artistique normalisee, ensuite modulable par le programme IKAL.
 
-Pour l'instant, cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee aux racines initiales IKAL. Elle calcule les valeurs par defaut depuis le sens Ithkuil, puis passe par un resolver `baseParams + userParams -> params`. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
+Cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee au vocabulaire IKAL controle. Elle calcule les valeurs par defaut depuis le sens Ithkuil, lit les affixes audio gradues quand ils sont presents, puis passe par un resolver `baseParams + userParams -> params`. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
 
-`userParams` et la syntaxe `mot(...)` sont l'etat transitoire actuel. La cible de l'etape 4 est de remplacer cette surface par des affixes audio gradues.
+`audioEffects` est maintenant la surface canonique pour les effets audio affixes. `userParams` et la syntaxe `mot(...)` restent un prototype transitoire pour tester certaines valeurs continues et l'inspecteur.
 
 ## Intention
 
@@ -35,7 +35,7 @@ IKAL distinguera trois niveaux :
 | Niveau | Source | Role |
 | --- | --- | --- |
 | `baseParams` | sens Ithkuil parse : racine, Function, Ca, etc. | donne les valeurs par defaut motivees linguistiquement |
-| `audioEffects` | affixes audio gradues sur le formative | module les effets audio du meme evenement |
+| `audioEffects` | affixes audio gradues sur le formative sonore | module les effets audio du meme evenement |
 | `userParams` | arguments positionnels ecrits dans l'editeur IKAL | prototype transitoire, a remplacer progressivement |
 | `params` | resolution finale | objet envoye aux moteurs image / animation / musique |
 
@@ -46,7 +46,7 @@ Regle de conception : un effet IKAL ne doit pas transformer un mot en autre chos
 Le modele de parametres distingue :
 
 - `baseParams` : valeurs derivees du sens Ithkuil ;
-- `audioEffects` : effets audio declares par affixes, cible de l'etape 4 ;
+- `audioEffects` : effets audio declares par affixes ;
 - `userParams` : valeurs demandees par l'utilisateur dans le prototype `mot(...)` ;
 - `params` : valeurs finales resolues.
 
@@ -95,9 +95,9 @@ Le modele de parametres distingue :
 }
 ```
 
-## Direction etape 4 : audio seulement
+## Affixes audio : audio seulement
 
-Les effets audio gradues seront lus depuis les affixes du mot sonore. Les images fixes et animations ne recuperent pas automatiquement ces effets : elles auront plus tard leur propre vocabulaire et leurs propres effets.
+Les effets audio gradues sont lus depuis les affixes du mot sonore. Les images fixes et animations ne recuperent pas automatiquement ces effets : elles auront leur propre vocabulaire et leurs propres effets.
 
 Dans cette premiere passe, on distingue :
 
@@ -107,11 +107,11 @@ Dans cette premiere passe, on distingue :
 | Propriete de source | Function, Ca.configuration, Ca.essence | mouvement, densite, multiplicite, representation fantome |
 | Effet audio | affixe gradue comme `ITY`, `MDL`, `FRC`, `OPF`, `FLS`, `DTS` | modifie le son produit par la source |
 
-Voir [Effets audio](effets-audio.md) pour la liste proposee.
+Voir [Effets audio](effets-audio.md) pour la liste retenue dans la premiere passe.
 
 ## Regles actuelles
 
-Ces regles calculent aujourd'hui les valeurs par defaut. Elles correspondent au futur `baseParams`.
+Ces regles calculent les valeurs par defaut de `baseParams`.
 
 ## Prototype positionnel actuel
 
@@ -141,7 +141,7 @@ alxružla     1 (motion), 0.88 (density), 0.6 (ghost)
 
 L'inspecteur reste visible pendant la saisie de `mot(...)`, jusqu'au mot suivant ou a une fermeture explicite. Les valeurs positionnelles sont transmises telles quelles aux champs `params` normalises ; le pont temporaire vers les moteurs POC les expose ensuite comme controles continus.
 
-Cette syntaxe est utile pour tester rapidement le moteur et l'ergonomie de l'inspecteur. Elle doit ensuite etre remplacee par la lecture reelle des affixes audio.
+Cette syntaxe est utile pour tester rapidement le moteur et l'ergonomie de l'inspecteur. Les effets audio canoniques passent maintenant par les affixes ; le prototype positionnel ne doit pas devenir la surface centrale du langage.
 
 Champs modifiables par le prototype positionnel actuel :
 
@@ -154,7 +154,7 @@ Champs modifiables par le prototype positionnel actuel :
 
 Les valeurs utilisateur sont bornees entre `0` et `1`. Les champs structurants comme `family`, `role`, `root` ou `mode` ne sont pas surchargeables : ils restent determines par le mot Ithkuil.
 
-Ces champs ne definissent pas la future liste d'affixes audio. Ils decrivent seulement ce que le prototype `mot(...)` sait moduler aujourd'hui.
+Ces champs ne definissent pas la liste d'affixes audio. Ils decrivent seulement ce que le prototype `mot(...)` sait moduler aujourd'hui.
 
 ### Racine vers famille
 
@@ -219,5 +219,6 @@ Si une forme est valide en Ithkuil mais ne peut pas encore produire de `params`,
 | `unsupported-audio-affix-slot` | Affixe audio reconnu, mais place dans un slot que la premiere passe IKAL ne mappe pas. |
 | `unsupported-user-param` | Parametre utilisateur ignore parce que ce champ ne fait pas partie des overrides autorises. |
 | `invalid-user-param` | Parametre utilisateur ignore parce que sa valeur n'est pas numerique. |
-| `too-many-audio-effects` | Diagnostic prevu : trop d'affixes audio actifs sur le meme evenement. |
-| `incompatible-audio-effect` | Diagnostic prevu : effet audio non compatible avec la famille sonore. |
+| `too-many-audio-effects` | Trop d'affixes audio actifs sur le meme evenement. |
+| `incompatible-audio-effect` | Effet audio non compatible avec la famille sonore. |
+| `incompatible-layer-mode` | Mot place dans un bloc de mode incompatible, par exemple source sonore dans `lyala:`. |

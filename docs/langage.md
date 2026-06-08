@@ -23,8 +23,8 @@ Le parser POC reste disponible en parallele comme filet de securite. Le parser a
 | `alkala` | `lk` | musique | music | music/play music/compose music |
 | `lyala` | `ly` | image | visual-design | visual design/artistic representation |
 | `lyula` | `ly` | animation | visual-design | visual design/artistic representation, Function DYN |
-| `allwala` | `llw` | visuel | light | light/illumination/brightness |
-| `spala` / `špala` | `šp` | visuel | color | color |
+| `allwala` | `llw` | image | light | light/illumination/brightness |
+| `spala` / `špala` | `šp` | image | color | color |
 | `trala` | `tr` | animation | linear-motion | linear motion |
 | `glala` | `gl` | animation | random-motion | horizontal-planar range of motion |
 | `acxwala` / `ačxwala` | `čxw` | musique | noise | raucous sound/noise |
@@ -48,11 +48,11 @@ Les variantes ASCII ci-dessus ne sont pas des formes IKAL valides et ne sont pas
 
 La premiere table de migration est maintenant codee dans `src/parser/poc-to-ikal-migration.js`. Elle couvre `kal`, `ras`, `suš` / `sus`, `kul`, `sal`, `ruř` / `rur`, `-tx` et `-šk` / `-sk`.
 
-Cette table est maintenant branchee dans l'application pour les formes candidates couvertes par `params`. Les mots POC restent acceptes temporairement.
+Cette table est maintenant branchee dans l'application pour les formes couvertes par `params`. Les mots POC restent acceptes temporairement.
 
 ## Params artistiques
 
-La premiere couche `sens Ithkuil -> params artistiques` est codee dans `src/parser/ithkuil-to-params.js`. Elle calcule les valeurs par defaut, c'est-a-dire le futur `baseParams`.
+La premiere couche `sens Ithkuil -> params artistiques` est codee dans `src/parser/ithkuil-to-params.js`. Elle calcule les valeurs par defaut, c'est-a-dire `baseParams`.
 
 Elle traduit :
 
@@ -64,17 +64,17 @@ Elle traduit :
 
 Voir [Parametres artistiques](params.md) pour le contrat detaille.
 
-Les parametres finaux de l'app devront ensuite etre resolus comme :
+Les parametres finaux de l'app sont resolus comme :
 
 ```text
-baseParams + audioEffects -> params
+baseParams + audioEffects + userParams -> params
 ```
 
 `audioEffects` designe les effets audio portes par des affixes Ithkuil gradues. La syntaxe `mot(0.85, 0.19)` reste active comme prototype transitoire : chaque position est mappee vers un champ autorise par la signature du mot, puis resolue par `baseParams + userParams -> params`.
 
 ## Etape 4 - affixes audio
 
-La prochaine tranche ne generalise pas les effets a tout le visuel. Elle cible seulement le son :
+Cette tranche ne generalise pas les effets a tout le visuel. Elle cible seulement le son :
 
 - un mot sonore reste la source ;
 - les proprietes de source viennent autant que possible du mot lui-meme : Function, Ca.configuration, Ca.essence, famille lexicale ;
@@ -95,6 +95,14 @@ Le parser applicatif conserve `layers` pour l'ordre global du programme, puis ex
 - `animationLayers` pour les couches `lyula:`.
 
 Une ligne IKAL sans declaration reste temporairement une couche `music` implicite. Cette compatibilite sera retiree ou transformee en diagnostic quand la syntaxe par modes sera suffisamment installee.
+
+Dans l'interface actuelle, `lancer` route toujours `alkala:` vers le moteur audio. Pour le visuel, le dernier mode declare entre `lyala:` et `lyula:` decide du rendu affiche : image fixe si `lyala:` est le dernier bloc visuel, animation si `lyula:` est le dernier bloc visuel.
+
+Le parser applicatif signale aussi les mots incompatibles avec le mode de leur bloc, par exemple une source sonore dans `lyala:` ou un mot d'image dans `alkala:`.
+
+L'autocompletion utilise la meme logique de compatibilite : la position du curseur determine le bloc courant, puis les suggestions sont filtrees pour `music`, `image` ou `animation`. Les formes audio affixees ne sont proposees que dans `alkala:`. Les mots d'image fixe ne sont pas proposes dans `lyula:` sauf compatibilite explicite, et inversement pour les mots d'animation dans `lyala:`.
+
+Limite actuelle : les moteurs visuels ne consomment pas encore toute la sequence d'une ligne. `lyala:` et `lyula:` sont routes par mode, mais la composition intra-couche visuelle reste a implementer.
 
 ## Pont temporaire vers les moteurs
 
@@ -122,3 +130,7 @@ Diagnostics actuels :
 | `unsupported-word-type` | La forme est Ithkuil valide, mais IKAL ne mappe pas encore ce type de mot. Pour l'instant, seuls les formatives sont candidats au mapping artistique. |
 | `unmapped-params-root` | La racine est connue linguistiquement, mais aucune regle artistique `sens -> params` n'existe encore. |
 | `unsupported-affixes` | Des affixes sont presents et conserves dans `ithkuil`, mais leur effet artistique n'est pas encore defini. |
+| `unsupported-audio-affix-slot` | Un affixe audio reconnu est place dans un slot que la premiere passe IKAL ne mappe pas. |
+| `too-many-audio-effects` | Trop d'affixes audio actifs sur le meme evenement. |
+| `incompatible-audio-effect` | Effet audio incompatible avec la famille sonore. |
+| `incompatible-layer-mode` | Mot place dans un bloc de mode incompatible. |

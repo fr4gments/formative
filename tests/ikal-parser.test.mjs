@@ -192,5 +192,17 @@ assert.equal(
   parseIkalProgram("alkala:\nļtala").error,
   "ligne 2 : instruction de bloc non indentée : « ļtala »",
 );
+assert.equal(
+  parseIkalProgram("lyala:\n  ļtala").error,
+  "ligne 2 : mot « ļtala » du domaine music incompatible avec le mode image",
+);
+assert.equal(
+  parseIkalProgram("alkala:\n  fřala").error,
+  "ligne 2 : mot « fřala » du domaine image incompatible avec le mode music",
+);
+assert.equal(
+  parseIkalProgram("lyula:\n  fřala").error,
+  "ligne 2 : mot « fřala » du domaine image incompatible avec le mode animation",
+);
 
 console.log("ikal-parser ok");

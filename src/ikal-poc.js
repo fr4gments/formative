@@ -37,10 +37,40 @@ export function createIkalPocApp({
     };
   }
 
+  function formatCount(count, singular, plural) {
+    return String(count) + " " + (count === 1 ? singular : plural);
+  }
+
+  function formatModeStats(label, layers) {
+    const stats = statsForLayers(layers);
+    return label + " " +
+      formatCount(stats.layerCount, "couche", "couches") + " / " +
+      formatCount(stats.wordCount, "mot", "mots");
+  }
+
+  function readoutForRoutedLayers(routedLayers, visualMode) {
+    return "▶ " + [
+      formatModeStats("musique", routedLayers.musicLayers),
+      formatModeStats("image", routedLayers.imageLayers),
+      formatModeStats("animation", routedLayers.animationLayers),
+      "visuel " + (visualMode || "aucun"),
+    ].join("   ·   ");
+  }
+
   function firstProgramsForLayers(layers) {
     return layers
       .map((layer) => layer.sequence[0])
       .filter(Boolean);
+  }
+
+  function lastVisualMode(layers) {
+    for (let i = layers.length - 1; i >= 0; i--) {
+      if (layers[i].mode === "image" || layers[i].mode === "animation") {
+        return layers[i].mode;
+      }
+    }
+
+    return null;
   }
 
   function layersForResult(result) {
@@ -54,6 +84,7 @@ export function createIkalPocApp({
         allLayers: layers,
         animationLayers: layers,
         imageLayers: layers,
+        legacyVisual: true,
         musicLayers: layers,
       };
     }
@@ -62,8 +93,32 @@ export function createIkalPocApp({
       allLayers: layers,
       animationLayers: result.animationLayers || [],
       imageLayers: result.imageLayers || [],
+      legacyVisual: result.sourceSyntax === "poc",
       musicLayers: result.musicLayers || [],
     };
+  }
+
+  function renderLaunchVisual(routedLayers) {
+    const visualMode = lastVisualMode(routedLayers.allLayers);
+
+    if (visualMode === "image") {
+      activeAnimationLayers = [];
+      animation.pause();
+      const { cols, rows } = animation.getSize();
+      image.draw({
+        cols,
+        rows,
+        programs: firstProgramsForLayers(routedLayers.imageLayers),
+      });
+      return "image";
+    }
+
+    activeAnimationLayers = visualMode === "animation" || routedLayers.legacyVisual
+      ? routedLayers.animationLayers
+      : [];
+    animation.resume();
+    animation.dessine?.();
+    return visualMode || (activeAnimationLayers.length ? "animation" : null);
   }
 
   function silence() {
@@ -90,15 +145,16 @@ export function createIkalPocApp({
 
     const routedLayers = layersForResult(result);
     const layers = routedLayers.allLayers;
-    activeAnimationLayers = routedLayers.animationLayers;
-    animation.resume();
+    const visualMode = renderLaunchVisual(routedLayers);
     Promise.resolve(music.start()).catch((error) => {
       readout.textContent = "✗ audio : " + error.message;
       readout.className = "err";
     });
     music.setLayers(routedLayers.musicLayers);
 
-    if (layers.length === 1 && result.sequence.length === 1) {
+    if (layers.some((layer) => layer.implicitMode === false)) {
+      readout.textContent = readoutForRoutedLayers(routedLayers, visualMode);
+    } else if (layers.length === 1 && result.sequence.length === 1) {
       const p = result.sequence[0];
       const sfx = p.suffixes.length
         ? "   [" + p.suffixes.map((suffix) => "-" + suffix).join(" ") + "]"

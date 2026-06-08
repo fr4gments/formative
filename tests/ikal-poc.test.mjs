@@ -202,7 +202,10 @@ const routedProgram = "alkala:\n  ļtala\nlyala:\n  fřala\nlyula:\n  trala";
 
 routedApp.lance(routedProgram);
 assert.equal(routedReadout.className, "ok");
-assert.equal(routedReadout.textContent, "▶ 3 couches   ·   3 mots superposés");
+assert.equal(
+  routedReadout.textContent,
+  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 1 mot   ·   animation 1 couche / 1 mot   ·   visuel animation",
+);
 assert.deepEqual(routedCalls[0], ["animation-programs", ["trala"]]);
 assert.equal(routedCalls[1], "music-start");
 assert.equal(routedCalls[2][0], "layers");
@@ -214,5 +217,19 @@ assert.deepEqual(routedCalls.slice(-3), [
   "animation-pause",
   ["image-draw", ["fřala"]],
 ]);
+
+const imageLastProgram = "alkala:\n  ļtala\nlyula:\n  trala\nlyala:\n  fřala";
+routedApp.lance(imageLastProgram);
+assert.equal(routedReadout.className, "ok");
+assert.equal(
+  routedReadout.textContent,
+  "▶ musique 1 couche / 1 mot   ·   image 1 couche / 1 mot   ·   animation 1 couche / 1 mot   ·   visuel image",
+);
+const imageLastTail = routedCalls.slice(-4);
+assert.deepEqual(imageLastTail[0], "animation-pause");
+assert.deepEqual(imageLastTail[1], ["image-draw", ["fřala"]]);
+assert.equal(imageLastTail[2], "music-start");
+assert.equal(imageLastTail[3][0], "layers");
+assert.deepEqual(imageLastTail[3][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
 
 console.log("ikal-poc ok");

@@ -1,7 +1,9 @@
 import { parseIthkuilProgram } from "./ithkuil-program-parser.js";
+import { seedRootCompatibleWithMode } from "./ikal-mode-compatibility.js";
 import { parseProgramme as parsePocProgramme } from "./poc-parser.js";
 
 const BLOCKING_DIAGNOSTICS = new Set([
+  "incompatible-layer-mode",
   "unmapped-root",
   "unmapped-params-root",
   "unsupported-word-type",
@@ -53,6 +55,7 @@ function lineToLayer(layer) {
     bodyText: layer.bodyText ?? layer.text,
     diagnostics: layer.diagnostics,
     implicitMode: layer.implicitMode ?? true,
+    line: layer.line,
     mode: layer.mode || "music",
     modeToken: layer.modeToken || null,
     modeWord: layer.modeWord || null,
@@ -62,6 +65,38 @@ function lineToLayer(layer) {
     text: layer.text,
     words: layer.words,
   };
+}
+
+function diagnostic({ code, line, message, severity = "warning", token }) {
+  return {
+    code,
+    line,
+    message,
+    severity,
+    token,
+  };
+}
+
+function layerModeDiagnostics(layer) {
+  const diagnostics = [];
+
+  for (const program of layer.sequence) {
+    const domain = program.seedRoot?.domain;
+
+    if (!domain || seedRootCompatibleWithMode(program.seedRoot, layer.mode)) {
+      continue;
+    }
+
+    diagnostics.push(diagnostic({
+      code: "incompatible-layer-mode",
+      line: layer.line,
+      message: "mot « " + program.text + " » du domaine " + domain + " incompatible avec le mode " + layer.mode,
+      severity: "error",
+      token: program.text,
+    }));
+  }
+
+  return diagnostics;
 }
 
 export function parseIkalProgram(text) {
@@ -99,20 +134,22 @@ export function parseIkalProgram(text) {
     return ithkuil;
   }
 
-  const sourceLines = ithkuil.text.split("\n");
-  const blocking = blockingDiagnostic(ithkuil.diagnostics);
-  const error = diagnosticError(blocking, sourceLines.length);
-
-  if (error) {
-    return { error };
-  }
-
   const layers = ithkuil.layers.map(lineToLayer);
 
   if (layers.length === 0) {
     return {
       error: "aucune couche IKAL exploitable",
     };
+  }
+
+  const sourceLines = ithkuil.text.split("\n");
+  const modeDiagnostics = layers.flatMap(layerModeDiagnostics);
+  const diagnostics = [...ithkuil.diagnostics, ...modeDiagnostics];
+  const blocking = blockingDiagnostic(diagnostics);
+  const error = diagnosticError(blocking, sourceLines.length);
+
+  if (error) {
+    return { error };
   }
 
   const emptyLayerIndex = layers.findIndex((layer) => layer.sequence.length === 0);
@@ -128,7 +165,7 @@ export function parseIkalProgram(text) {
   const groups = groupedLayers(layers);
 
   return {
-    diagnostics: ithkuil.diagnostics,
+    diagnostics,
     layers,
     ...groups,
     sequence: firstSequence(layers, groups.musicLayers),

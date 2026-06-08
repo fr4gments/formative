@@ -4,6 +4,7 @@ import {
   asciiFold,
   completionTokenAt,
   createIkalAutocomplete,
+  modeContextAt,
   replaceCompletionToken,
   suggestIkalWords,
 } from "../src/editor/ikal-autocomplete.js";
@@ -77,6 +78,22 @@ assert.deepEqual(completionTokenAt("ļtala acxw", 10), {
   start: 6,
   text: "acxw",
 });
+assert.deepEqual(modeContextAt("alkala:\n  acxw", "alkala:\n  acxw".length), {
+  implicit: false,
+  mode: "music",
+});
+assert.deepEqual(modeContextAt("lyala:\n  fr", "lyala:\n  fr".length), {
+  implicit: false,
+  mode: "image",
+});
+assert.deepEqual(modeContextAt("lyula:\n  tr", "lyula:\n  tr".length), {
+  implicit: false,
+  mode: "animation",
+});
+assert.deepEqual(modeContextAt("lyula:\ntr", "lyula:\ntr".length), {
+  implicit: false,
+  mode: "mode",
+});
 
 assert.equal(suggestIkalWords("acxwu")[0].form, "ačxwuža");
 assert.equal(suggestIkalWords("ltu")[0].form, "ļtutļa");
@@ -99,6 +116,15 @@ assert.equal(suggestIkalWords("reverb")[0].form, "ļtalompa");
 assert.equal(suggestIkalWords("dts")[0].paramSignature, "DTS/7 reverb = 0.7");
 assert.equal(suggestIkalWords("dts9")[0].form, "ļtalumpa");
 assert.equal(suggestIkalWords("dts9")[0].paramSignature, "DTS/9 reverb = 0.9");
+assert.equal(suggestIkalWords("reverb", { mode: "music" })[0].form, "ļtalompa");
+assert.equal(suggestIkalWords("reverb", { mode: "image" }).length, 0);
+assert.equal(suggestIkalWords("fr", { mode: "image" })[0].form, "fřala");
+assert.equal(suggestIkalWords("fr", { mode: "animation" }).some((suggestion) => suggestion.form === "fřala"), false);
+assert.equal(suggestIkalWords("tr", { mode: "animation" })[0].form, "trala");
+assert.equal(suggestIkalWords("tr", { mode: "image" }).some((suggestion) => suggestion.form === "trala"), false);
+assert.equal(suggestIkalWords("affr", { mode: "music" })[0].form, "affrala");
+assert.equal(suggestIkalWords("affr", { mode: "image" })[0].form, "affrala");
+assert.equal(suggestIkalWords("affr", { mode: "animation" })[0].form, "affrala");
 
 const replaced = replaceCompletionToken("acxw", completionTokenAt("acxw", 4), "ačxwuža");
 assert.equal(replaced.value, "ačxwuža ");
@@ -198,6 +224,47 @@ autocomplete.refresh();
 assert.equal(panel.hidden, false);
 assert.equal(panel.children[0].children[0].textContent, "ļtalumpa");
 assert.equal(panel.children[0].children[2].textContent, "DTS/9 reverb = 0.9");
+
+textarea.value = "alkala:\n  reverb";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].children[0].textContent, "ļtalompa");
+
+textarea.value = "lyala:\n  reverb";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, true);
+
+textarea.value = "lyala:\n  fr";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].children[0].textContent, "fřala");
+
+textarea.value = "lyula:\n  tr";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].children[0].textContent, "trala");
+
+textarea.value = "lyula:\n  fřala";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, true);
+
+textarea.value = "lyala:\n  fřala";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].className, "suggestion inspector");
+assert.equal(panel.children[0].children[1].textContent, "image / shape · modes image");
 
 textarea.value = "affrala(0.85) ";
 textarea.selectionStart = textarea.value.length;

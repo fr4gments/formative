@@ -1,5 +1,9 @@
 import { IKAL_SEED_ROOTS } from "../parser/ithkuil-seed-roots.js";
 import {
+  compatibleModesForSeedRoot,
+  modeForDeclaration,
+} from "../parser/ikal-mode-compatibility.js";
+import {
   DEFAULT_AUDIO_AFFIX_DEGREES,
   IKAL_AUDIO_AFFIX_FORMS,
   audioAffixDefinitionFor,
@@ -14,6 +18,7 @@ const NOOP_AUTOCOMPLETE = {
   refresh: () => {},
 };
 const AUDIO_BASE_PRIORITY = ["ļtala", "ačxwuža", "alxrasa", "pswala", "abjala"];
+const MODE_HEADER = "mode";
 
 export function asciiFold(text) {
   return text
@@ -34,6 +39,43 @@ export function completionTokenAt(value, caret) {
     end,
     start,
     text: value.slice(start, end),
+  };
+}
+
+export function modeContextAt(value, caret) {
+  const end = Math.max(0, Math.min(caret ?? value.length, value.length));
+  const lineStart = value.lastIndexOf("\n", end - 1) + 1;
+  const previousLines = value.slice(0, lineStart).replace(/\r\n?/g, "\n").split("\n");
+  const currentLine = value.slice(lineStart, end);
+  let mode = null;
+
+  for (const line of previousLines) {
+    const trimmed = line.trim();
+    const header = trimmed.endsWith(":") ? trimmed.slice(0, -1) : "";
+    const declared = modeForDeclaration(header);
+
+    if (declared && trimmed === header + ":") {
+      mode = declared;
+    }
+  }
+
+  if (mode && currentLine.length > 0 && !/^\s/.test(currentLine)) {
+    return {
+      implicit: false,
+      mode: MODE_HEADER,
+    };
+  }
+
+  if (mode) {
+    return {
+      implicit: false,
+      mode,
+    };
+  }
+
+  return {
+    implicit: true,
+    mode: null,
   };
 }
 
@@ -141,6 +183,7 @@ function scoreRoot(root, query) {
 
 function suggestionFromRoot(root, score) {
   return {
+    compatibleModes: compatibleModesForSeedRoot(root),
     cr: root.cr,
     domain: root.domain,
     family: root.family,
@@ -249,6 +292,7 @@ function suggestionFromAudioForm(form, roots, score) {
   const signature = formatAudioAffixSignature(form.slotVIIAffixes);
 
   return {
+    compatibleModes: ["music"],
     cr: baseRoot?.cr || "",
     domain: baseRoot?.domain || "music",
     family: baseRoot?.family || "audio-affix",
@@ -263,6 +307,7 @@ function suggestionFromAudioForm(form, roots, score) {
 
 export function suggestIkalWords(query, {
   limit = 8,
+  mode = null,
   roots = IKAL_SEED_ROOTS,
 } = {}) {
   const foldedQuery = asciiFold(query.trim());
@@ -271,17 +316,39 @@ export function suggestIkalWords(query, {
     return [];
   }
 
+  if (mode && hasIncompatibleExactRootMatch(foldedQuery, query.trim(), roots, mode)) {
+    return [];
+  }
+
   const rootSuggestions = roots
     .map((root) => suggestionFromRoot(root, scoreRoot(root, foldedQuery)))
-    .filter((suggestion) => suggestion.score > 0);
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
   const audioSuggestions = IKAL_AUDIO_AFFIX_FORMS
     .filter(isCompletableAudioForm)
     .map((form) => suggestionFromAudioForm(form, roots, scoreAudioForm(form, foldedQuery)))
-    .filter((suggestion) => suggestion.score > 0);
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
 
   return [...rootSuggestions, ...audioSuggestions]
     .sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form))
     .slice(0, limit);
+}
+
+function suggestionCompatibleWithMode(suggestion, mode) {
+  if (!mode) {
+    return true;
+  }
+
+  return suggestion.compatibleModes?.includes(mode);
+}
+
+function hasIncompatibleExactRootMatch(foldedQuery, query, roots, mode) {
+  return roots.some((root) => {
+    const exact = root.form === query || asciiFold(root.form) === foldedQuery;
+
+    return exact && !compatibleModesForSeedRoot(root).includes(mode);
+  });
 }
 
 export function replaceCompletionToken(value, token, form) {
@@ -338,7 +405,7 @@ function createSuggestionRow(doc, suggestion, index, selected) {
   form.textContent = suggestion.form;
 
   meta.className = "suggestion-meta";
-  meta.textContent = suggestion.domain + " / " + suggestion.family;
+  meta.textContent = suggestionMeta(suggestion);
 
   signature.className = "suggestion-signature";
   signature.textContent = suggestion.paramSignature;
@@ -364,7 +431,7 @@ function createInspectorRow(doc, suggestion) {
   form.textContent = suggestion.form;
 
   meta.className = "suggestion-meta";
-  meta.textContent = suggestion.domain + " / " + suggestion.family;
+  meta.textContent = suggestionMeta(suggestion);
 
   signature.className = "suggestion-signature";
   signature.textContent = suggestion.paramSignature;
@@ -374,6 +441,14 @@ function createInspectorRow(doc, suggestion) {
 
   row.append(form, meta, signature, sense);
   return row;
+}
+
+function suggestionMeta(suggestion) {
+  const modes = suggestion.compatibleModes?.length
+    ? " · modes " + suggestion.compatibleModes.join(", ")
+    : "";
+
+  return suggestion.domain + " / " + suggestion.family + modes;
 }
 
 export function createIkalAutocomplete({
@@ -435,12 +510,12 @@ export function createIkalAutocomplete({
     textarea.setAttribute("aria-expanded", "true");
   }
 
-  function showInspectionForCaret(caret) {
+  function showInspectionForCaret(caret, mode = null) {
     const inspectionToken = inspectionTokenAt(textarea.value, caret);
-    const inspection = suggestIkalWords(inspectionToken.text, { limit: 1, roots })
+    const inspection = suggestIkalWords(inspectionToken.text, { limit: 1, mode, roots })
       .find((suggestion) => isCanonicalExactToken(inspectionToken, suggestion));
 
-    if (!inspection?.paramSignature) {
+    if (!inspection) {
       return false;
     }
 
@@ -452,7 +527,7 @@ export function createIkalAutocomplete({
     return true;
   }
 
-  function normalizeDetachedOpeningParen(caret) {
+  function normalizeDetachedOpeningParen(caret, mode = null) {
     const value = textarea.value;
 
     if (caret <= 1 || value[caret - 1] !== "(" || !/\s/.test(value[caret - 2])) {
@@ -466,7 +541,7 @@ export function createIkalAutocomplete({
     }
 
     const previousToken = previousCompletionTokenBefore(value, gapStart);
-    const inspection = suggestIkalWords(previousToken.text, { limit: 1, roots })
+    const inspection = suggestIkalWords(previousToken.text, { limit: 1, mode, roots })
       .find((suggestion) => isCanonicalExactToken(previousToken, suggestion));
 
     if (!inspection?.paramSignature) {
@@ -487,11 +562,12 @@ export function createIkalAutocomplete({
       ? textarea.selectionStart
       : textarea.value.length;
 
-    caret = normalizeDetachedOpeningParen(caret);
+    const modeContext = modeContextAt(textarea.value, caret);
+    caret = normalizeDetachedOpeningParen(caret, modeContext.mode);
     const token = completionTokenAt(textarea.value, caret);
 
     if (!token.text) {
-      if (showInspectionForCaret(caret)) {
+      if (showInspectionForCaret(caret, modeContext.mode)) {
         return;
       }
 
@@ -499,21 +575,21 @@ export function createIkalAutocomplete({
       return;
     }
 
-    const candidates = suggestIkalWords(token.text, { limit, roots });
+    const candidates = suggestIkalWords(token.text, { limit, mode: modeContext.mode, roots });
     const exact = candidates.find((suggestion) => isCanonicalExactToken(token, suggestion));
     const suggestions = candidates.filter((suggestion) => !isCanonicalExactToken(token, suggestion));
 
-    if (suggestions.length === 0) {
-      if (exact?.paramSignature) {
-        state.open = false;
-        state.inspecting = exact;
-        state.suggestions = [];
-        state.token = token;
-        render();
-        return;
-      }
+    if (exact) {
+      state.open = false;
+      state.inspecting = exact;
+      state.suggestions = [];
+      state.token = token;
+      render();
+      return;
+    }
 
-      if (showInspectionForCaret(caret)) {
+    if (suggestions.length === 0) {
+      if (showInspectionForCaret(caret, modeContext.mode)) {
         return;
       }
 

@@ -10,7 +10,7 @@ Cette page liste les mots retenus ou candidats pour le langage IKAL. Un mot n'es
 
 | Statut | Signification |
 | --- | --- |
-| Retenu | Mot valide et candidat direct pour le langage IKAL. |
+| Retenu | Mot valide et deja branche dans le langage IKAL. |
 | Candidat | Mot interessant, mais mapping artistique encore a confirmer. |
 | Transition | Mot POC conserve temporairement pour comparaison. |
 
@@ -38,7 +38,7 @@ Exemples :
 | Racine | `lk` |
 | Domaine IKAL | musique |
 | Sens Ithkuil retenu | music/play music/compose music |
-| Role IKAL prevu | declaration de couche musique : `alkala:` |
+| Role IKAL | declaration de bloc musique : `alkala:` |
 | Effet attendu | active une couche sonore |
 
 ### `lyala`
@@ -49,7 +49,7 @@ Exemples :
 | Racine | `ly` |
 | Domaine IKAL | image |
 | Sens Ithkuil retenu | visual design/artistic representation |
-| Role IKAL prevu | declaration de couche image fixe : `lyala:` |
+| Role IKAL | declaration de bloc image fixe : `lyala:` |
 | Effet attendu | active une couche visuelle fixe |
 
 ### `lyula`
@@ -61,7 +61,7 @@ Exemples :
 | Function | `DYN` |
 | Domaine IKAL | animation |
 | Sens Ithkuil retenu | visual design/artistic representation avec Function DYN |
-| Role IKAL prevu | declaration de couche animation : `lyula:` |
+| Role IKAL | declaration de bloc animation : `lyula:` |
 | Effet attendu | active une couche visuelle animee |
 
 ## Son
@@ -98,7 +98,7 @@ Exemples :
 | Racine | `čxw` |
 | Domaine IKAL | musique |
 | Sens Ithkuil retenu | raucous sound/noise |
-| Role IKAL prevu | forme simple de la famille bruit |
+| Role IKAL | forme simple de la famille bruit |
 | Effet attendu | bruit, souffle rugueux, densite sonore |
 
 ### `ačxwuža`
@@ -204,7 +204,7 @@ Exemples :
 | Sens Ithkuil retenu | horizontal-planar range of motion / random directed movement |
 | Effet attendu | mouvement aleatoire dirige, derive, agitation |
 
-## Visuel
+## Image fixe
 
 ### `allwala`
 
@@ -212,7 +212,7 @@ Exemples :
 | --- | --- |
 | Statut | Candidat |
 | Racine | `llw` |
-| Domaine IKAL | visuel |
+| Domaine IKAL | image |
 | Sens Ithkuil retenu | light/illumination/brightness |
 | Effet attendu | luminosite, glow, contraste clair |
 
@@ -222,7 +222,7 @@ Exemples :
 | --- | --- |
 | Statut | Candidat |
 | Racine | `šp` |
-| Domaine IKAL | visuel |
+| Domaine IKAL | image |
 | Sens Ithkuil retenu | color |
 | Effet attendu | palette, hue shift, saturation |
 

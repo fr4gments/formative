@@ -17,7 +17,7 @@ Cette table sert a remplacer progressivement les anciennes etiquettes par des mo
 | `-tx` | dechirement / bitcrush / glitch | `sčala` | racine `sč` : break apart/break into pieces/crumble |
 | `-šk` / `-sk` | saturation / repli / distorsion | `affrala` | racine `ffr` : bending/distortion/twisting/warping |
 
-Les deux anciens suffixes POC sont listes avec un tiret parce qu'ils viennent de l'ancien parseur. Leur remplacement IKAL est une forme-mot candidate ; la syntaxe finale des effets composes sera decidee dans l'etape mapping / orchestration.
+Les deux anciens suffixes POC sont listes avec un tiret parce qu'ils viennent de l'ancien parseur. Leur remplacement IKAL n'est plus un suffixe : `sčala` et `affrala` sont des mots IKAL de glitch compatibles avec les premiers modes. Pour les effets audio gradues, la syntaxe canonique passe maintenant par les affixes documentes dans [Effets audio](effets-audio.md).
 
 ## Regle de migration
 
