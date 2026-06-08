@@ -1,14 +1,14 @@
 # Parametres artistiques
 
-Les `params` sont l'interface stable entre la verite linguistique Ithkuil, les effets declares dans le programme IKAL, et les moteurs IKAL. Ils ne remplacent pas l'objet `ithkuil` : ils en sont une traduction artistique normalisee, ensuite modulable par le programme IKAL.
+Les `params` sont l'interface stable entre la verite linguistique Ithkuil, les effets declares dans le programme IKAL, et les moteurs IKAL. Ils ne remplacent pas l'objet `ithkuil` : ils en sont une traduction artistique normalisee.
 
-Cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee au vocabulaire IKAL controle. Elle calcule les valeurs par defaut depuis le sens Ithkuil, lit les affixes audio gradues quand ils sont presents, puis passe par un resolver `baseParams + userParams -> params`. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
+Cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee au vocabulaire IKAL controle. Elle calcule les valeurs par defaut depuis le sens Ithkuil, lit les affixes audio gradues quand ils sont presents, puis produit les `params` envoyes aux moteurs. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
 
-`audioEffects` est maintenant la surface canonique pour les effets audio affixes. `userParams` et la syntaxe `mot(...)` restent un prototype transitoire pour tester certaines valeurs continues et l'inspecteur.
+`audioEffects` est la surface canonique pour les effets audio affixes. Les valeurs exposees au langage viennent des categories Ithkuil et, pour le son, des degres d'affixes audio.
 
 ## Intention
 
-La finalite n'est pas d'avoir des parametres caches et figes dans le moteur. Chaque mot IKAL doit produire une base semantique, puis l'utilisateur doit pouvoir la moduler depuis l'editeur.
+La finalite n'est pas d'avoir des parametres caches et figes dans le moteur. Chaque mot IKAL doit produire une base semantique. Les modulations exposees a l'utilisateur doivent rester motivees par la forme IKAL : affixes audio pour le son, puis mots ou affixes dedies pour le visuel quand ils seront definis.
 
 Modele vise :
 
@@ -20,14 +20,6 @@ forme Ithkuil
   -> params            // valeurs finales envoyees aux moteurs
 ```
 
-Etat transitoire encore branche :
-
-```ikal
-alxružla(0.8, 0.95, 0.4)
-```
-
-Ici, `alxružla` fournit le sens de base : roulement dynamique, multiplex, representatif. Les parametres positionnels ne changent pas ce sens ; ils modulent les champs documentes par la signature du mot. Ce comportement sert de prototype, pas de syntaxe finale.
-
 ## Couches de parametres
 
 IKAL distinguera trois niveaux :
@@ -36,7 +28,6 @@ IKAL distinguera trois niveaux :
 | --- | --- | --- |
 | `baseParams` | sens Ithkuil parse : racine, Function, Ca, etc. | donne les valeurs par defaut motivees linguistiquement |
 | `audioEffects` | affixes audio gradues sur le formative sonore | module les effets audio du meme evenement |
-| `userParams` | arguments positionnels ecrits dans l'editeur IKAL | prototype transitoire, a remplacer progressivement |
 | `params` | resolution finale | objet envoye aux moteurs image / animation / musique |
 
 Regle de conception : un effet IKAL ne doit pas transformer un mot en autre chose. Il peut intensifier, attenuer ou preciser les effets derives du mot, mais la famille semantique reste portee par la forme Ithkuil.
@@ -47,7 +38,6 @@ Le modele de parametres distingue :
 
 - `baseParams` : valeurs derivees du sens Ithkuil ;
 - `audioEffects` : effets audio declares par affixes ;
-- `userParams` : valeurs demandees par l'utilisateur dans le prototype `mot(...)` ;
 - `params` : valeurs finales resolues.
 
 `params` garde la structure suivante :
@@ -111,50 +101,7 @@ Voir [Effets audio](effets-audio.md) pour la liste retenue dans la premiere pass
 
 ## Regles actuelles
 
-Ces regles calculent les valeurs par defaut de `baseParams`.
-
-## Prototype positionnel actuel
-
-Les parametres s'ecrivent directement apres le mot :
-
-```ikal
-affrala(0.85)
-sčala(0.12, 0.34)
-alxružla(0.8, 0.95, 0.4)
-```
-
-Regles de validation :
-
-- arguments positionnels uniquement ;
-- valeurs entre `0` et `1` inclus ;
-- maximum deux chiffres apres le point decimal ;
-- `0`, `1`, `0.7`, `0.85`, `1.0` et `1.00` sont valides ;
-- `0.777`, `1.2`, `-0.1`, `.5` et les arguments vides sont invalides.
-
-L'ordre des arguments depend de la signature du mot. L'editeur affiche les slots sous la forme `float (effet)` pour eviter la confusion :
-
-```text
-affrala      0.9 (distortion), 0.75 (drive), 0.35 (saturation)
-sčala        0.9 (tear), 0.55 (bitcrush), 0.7 (roughness)
-alxružla     1 (motion), 0.88 (density), 0.6 (ghost)
-```
-
-L'inspecteur reste visible pendant la saisie de `mot(...)`, jusqu'au mot suivant ou a une fermeture explicite. Les valeurs positionnelles sont transmises telles quelles aux champs `params` normalises ; le pont temporaire vers les moteurs POC les expose ensuite comme controles continus.
-
-Cette syntaxe est utile pour tester rapidement le moteur et l'ergonomie de l'inspecteur. Les effets audio canoniques passent maintenant par les affixes ; le prototype positionnel ne doit pas devenir la surface centrale du langage.
-
-Champs modifiables par le prototype positionnel actuel :
-
-| Groupe | Champs |
-| --- | --- |
-| `effects` | `bitcrush`, `distortion`, `drive`, `roughness`, `saturation`, `tear` |
-| `motion` | `amount` |
-| `multiplicity` | `density` |
-| `representation` | `ghost` |
-
-Les valeurs utilisateur sont bornees entre `0` et `1`. Les champs structurants comme `family`, `role`, `root` ou `mode` ne sont pas surchargeables : ils restent determines par le mot Ithkuil.
-
-Ces champs ne definissent pas la liste d'affixes audio. Ils decrivent seulement ce que le prototype `mot(...)` sait moduler aujourd'hui.
+Ces regles calculent les valeurs par defaut de `baseParams`. Les effets audio canoniques sont ensuite ajoutes depuis les affixes documentes dans [Effets audio](effets-audio.md). Les champs structurants comme `family`, `role`, `root` ou `mode` restent determines par le mot Ithkuil.
 
 ### Racine vers famille
 
@@ -217,8 +164,6 @@ Si une forme est valide en Ithkuil mais ne peut pas encore produire de `params`,
 | `unmapped-params-root` | Racine connue linguistiquement mais sans regle `sens -> params`. |
 | `unsupported-affixes` | Des affixes sont parses, mais leur effet artistique n'est pas encore defini. |
 | `unsupported-audio-affix-slot` | Affixe audio reconnu, mais place dans un slot que la premiere passe IKAL ne mappe pas. |
-| `unsupported-user-param` | Parametre utilisateur ignore parce que ce champ ne fait pas partie des overrides autorises. |
-| `invalid-user-param` | Parametre utilisateur ignore parce que sa valeur n'est pas numerique. |
 | `too-many-audio-effects` | Trop d'affixes audio actifs sur le meme evenement. |
 | `incompatible-audio-effect` | Effet audio non compatible avec la famille sonore. |
 | `incompatible-layer-mode` | Mot place dans un bloc de mode incompatible, par exemple source sonore dans `lyala:`. |

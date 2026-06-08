@@ -14,7 +14,7 @@ IKAL s'appuie sur `@zsnout/ithkuil` dans l'outillage Node pour verifier et gener
 
 Le code IKAL ne reinvente pas la morphologie Ithkuil. Il limite volontairement la surface acceptee par l'application et ajoute une couche artistique au-dessus des formes retenues.
 
-Le parser POC reste disponible en parallele comme filet de securite. Le parser applicatif essaie d'abord le vocabulaire POC ; si celui-ci ne correspond pas, il passe au parser Ithkuil et n'accepte que les formes qui produisent des `params` exploitables.
+Le parser POC reste disponible en parallele pour la migration et les tests historiques. Le parser applicatif essaie d'abord le vocabulaire POC ; si celui-ci ne correspond pas, il passe au parser Ithkuil et n'accepte que les formes qui produisent des `params` exploitables.
 
 ## Racines initiales
 
@@ -48,7 +48,7 @@ Les variantes ASCII ci-dessus ne sont pas des formes IKAL valides et ne sont pas
 
 La premiere table de migration est maintenant codee dans `src/parser/poc-to-ikal-migration.js`. Elle couvre `kal`, `ras`, `suš` / `sus`, `kul`, `sal`, `ruř` / `rur`, `-tx` et `-šk` / `-sk`.
 
-Cette table est maintenant branchee dans l'application pour les formes couvertes par `params`. Les mots POC restent acceptes temporairement.
+Cette table est maintenant branchee dans l'application pour les formes couvertes par `params`. Les mots POC restent acceptes temporairement, mais ils ne sont plus la reference d'ecriture IKAL.
 
 ## Params artistiques
 
@@ -67,10 +67,10 @@ Voir [Parametres artistiques](params.md) pour le contrat detaille.
 Les parametres finaux de l'app sont resolus comme :
 
 ```text
-baseParams + audioEffects + userParams -> params
+baseParams + audioEffects -> params
 ```
 
-`audioEffects` designe les effets audio portes par des affixes Ithkuil gradues. La syntaxe `mot(0.85, 0.19)` reste active comme prototype transitoire : chaque position est mappee vers un champ autorise par la signature du mot, puis resolue par `baseParams + userParams -> params`.
+`audioEffects` designe les effets audio portes par des affixes Ithkuil gradues. Les variations numeriques documentees passent par les degres d'affixes audio.
 
 ## Etape 4 - affixes audio
 
@@ -94,7 +94,7 @@ Le parser applicatif conserve `layers` pour l'ordre global du programme, puis ex
 - `imageLayers` pour les couches `lyala:` ;
 - `animationLayers` pour les couches `lyula:`.
 
-Une ligne IKAL sans declaration reste temporairement une couche `music` implicite. Cette compatibilite sera retiree ou transformee en diagnostic quand la syntaxe par modes sera suffisamment installee.
+La syntaxe retenue declare explicitement le mode avant les instructions. Un en-tete de bloc doit etre seul sur sa ligne, puis les instructions du bloc doivent etre indentees.
 
 Dans l'interface actuelle, `lancer` route toujours `alkala:` vers le moteur audio. Pour le visuel, le dernier mode declare entre `lyala:` et `lyula:` decide du rendu affiche : image fixe si `lyala:` est le dernier bloc visuel, animation si `lyula:` est le dernier bloc visuel.
 

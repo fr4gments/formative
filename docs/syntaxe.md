@@ -1,6 +1,6 @@
 # Syntaxe
 
-Cette page decrit la syntaxe IKAL branchee dans l'interface, plus les surfaces encore transitoires.
+Cette page decrit la syntaxe IKAL retenue pour l'interface.
 
 ## Principe
 
@@ -8,25 +8,55 @@ IKAL est un langage ecrit. L'utilisateur ecrit des formes IKAL, pas des boutons 
 
 Chaque forme IKAL est choisie comme une vraie forme New Ithkuil. Le sens du mot doit motiver son effet artistique.
 
-## Couches
+## Forme generale
+
+Un programme IKAL est decoupe en blocs de modes. Un en-tete de mode doit etre seul sur sa ligne, suivi de lignes indentees :
+
+```ikal
+alkala:
+  ļtala ļtalompa
+  alxrasa
+
+lyala:
+  fřala ftala
+
+lyula:
+  trala glala
+```
+
+Les trois en-tetes actuellement retenus sont :
+
+| Mot | Mode | Sens retenu |
+| --- | --- | --- |
+| `alkala:` | musique | music playing |
+| `lyala:` | image fixe | creating a visual design manually |
+| `lyula:` | animation | visual design with Function DYN |
+
+La ponctuation `:` marque un en-tete de bloc. Il doit etre seul sur sa ligne. Les lignes indentees suivantes appartiennent a ce mode jusqu'au prochain en-tete de mode.
+
+## Couches et sequences
 
 L'editeur multi-lignes suit la regle suivante :
 
 ```ikal
-ligne 1 = couche 1
-ligne 2 = couche 2
-ligne 3 = couche 3
+une ligne d'instructions = une couche
+plusieurs mots sur une ligne = une sequence
+plusieurs lignes sous le meme mode = couches superposees dans ce mode
 ```
 
 Dans une ligne, les mots forment une sequence. Plusieurs lignes sous un meme mode sont superposees. Cote musique, cette sequence est deja consommee par le moteur audio. Cote image fixe et animation, la composition intra-ligne est le prochain point a corriger : le rendu visuel utilise encore principalement le premier mot de chaque couche.
 
 ## Mots actuellement executables
 
-L'application accepte maintenant un vocabulaire IKAL controle, en plus du vocabulaire POC temporaire. Exemples :
+L'application accepte maintenant un vocabulaire IKAL controle. Exemples :
 
 ```ikal
-ļtala alxrasa ačxwuža
-pswatļa alxružla affrala
+alkala:
+  ļtala alxrasa ačxwuža
+  pswatļa alxružla
+
+lyala:
+  fřala affrala
 ```
 
 Ces mots appartiennent au vocabulaire IKAL controle. Ils sont verifies par `@zsnout/ithkuil` dans les tests Node, puis reconnus dans le runtime navigateur par l'adaptateur IKAL avant d'etre traduits en `params` et envoyes aux moteurs via un pont temporaire compatible avec les moteurs POC.
@@ -49,25 +79,15 @@ Dans un bloc de mode, la completion devient contextuelle :
 
 L'inspecteur affiche aussi les modes compatibles du mot. Les mots communs, comme les premiers mots de glitch, ne sont proposes dans plusieurs modes que parce que cette compatibilite est declaree explicitement.
 
-## Modes
+## Routage des modes
 
-Les modes sont declares par des mots IKAL visibles :
-
-| Mot | Mode | Sens retenu |
-| --- | --- | --- |
-| `alkala:` | musique | music playing |
-| `lyala:` | image fixe | creating a visual design manually |
-| `lyula:` | animation | visual design with Function DYN |
-
-La ponctuation `:` marque un en-tete de bloc. Il doit etre seul sur sa ligne. Les lignes indentees suivantes appartiennent a ce mode jusqu'au prochain en-tete de mode. Le parser applicatif route ensuite ces lignes par mode :
+Le parser applicatif route les lignes par mode :
 
 - les couches `alkala:` alimentent le moteur audio ;
 - les couches `lyala:` alimentent le rendu image fixe ;
 - les couches `lyula:` alimentent l'animation.
 
-Chaque ligne d'instructions sous un en-tete reste une couche : mots espaces = sequence, lignes multiples sous le meme en-tete = couches superposees dans ce mode.
-
-Une ligne IKAL sans declaration de mode reste temporairement une couche musique implicite, pour garder les exemples existants utilisables pendant la transition. Les instructions d'un bloc explicite doivent etre indentees.
+Chaque ligne d'instructions sous un en-tete reste une couche : mots espaces = sequence, lignes multiples sous le meme en-tete = couches superposees dans ce mode. Les instructions d'un bloc explicite doivent etre indentees.
 
 Au lancement, la musique reste toujours separee du visuel : `alkala:` joue en audio. Pour le rendu visuel, le dernier bloc visuel dans l'editeur prend le dessus :
 
@@ -92,9 +112,7 @@ Dans cet exemple, `lyula:` est le dernier bloc visuel : l'animation est donc aff
 
 ## Effets audio gradues
 
-La syntaxe canonique des effets audio n'est pas `mot(...)`, ni un chainage `mot.effet(...)`.
-
-Pour les effets audio, la syntaxe cible est morphologique :
+Pour les effets audio, la syntaxe canonique est morphologique :
 
 ```text
 forme sonore + affixes audio gradues = un seul evenement sonore modifie
@@ -112,18 +130,6 @@ La premiere passe concerne uniquement le son. Les effets image / animation auron
 
 Le cadrage est documente dans [Effets audio](effets-audio.md).
 
-## Prototype de parametres
-
-Le prototype positionnel suivant reste branche pour tester les valeurs continues et l'inspecteur :
-
-```ikal
-alxružla(0.8, 0.95, 0.4)
-affrala(0.85)
-sčala(0.12, 0.34)
-```
-
-Ce prototype est transitoire. Il reste utile pour verifier le moteur, mais il ne doit pas devenir la surface canonique du langage.
-
 ## Etat de transition
 
-Pendant la migration, le vocabulaire POC (`kal`, `ras`, `sus`, etc.) peut rester disponible pour tester l'experience de l'etape 1. Il ne fait pas partie du langage IKAL final.
+Pendant la migration, le vocabulaire POC (`kal`, `ras`, `sus`, etc.) peut rester disponible pour tester l'experience de l'etape 1. Il ne fait pas partie du langage IKAL final et n'est pas la syntaxe a ecrire pour les nouveaux programmes.
