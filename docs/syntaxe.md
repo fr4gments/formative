@@ -19,7 +19,7 @@ alkala:
 
 lyala:
   fřala ftala špala allwala
-  avtala ufthala amzmala etçvala
+  avtalöxa ufthalölba amzmaläňva etçvalöxäňva
 
 lyula:
   trala glala
@@ -58,7 +58,7 @@ alkala:
 
 lyala:
   fřala ftala špala allwala
-  avtala ufthala amzmala etçvala
+  avtalöxa ufthalölba amzmaläňva etçvalöxäňva
 ```
 
 Ces mots appartiennent au vocabulaire IKAL controle. Ils sont verifies par `@zsnout/ithkuil` dans les tests Node, puis reconnus dans le runtime navigateur par l'adaptateur IKAL avant d'etre traduits en `params` et envoyes aux moteurs via un pont temporaire compatible avec les moteurs POC.
@@ -73,13 +73,14 @@ Ces approximations ne sont pas des alias du langage. Si elles sont lancees telle
 
 Pour les effets audio affixes, l'editeur propose aussi des formes generees depuis le nom d'affixe, l'effet ou le degre : `ity`, `opf`, `dts`, `dts9`, `degr`, `reverb`, etc. L'inspecteur affiche alors les affixes et degres, par exemple `ITY/7 intensity = 0.7`.
 
+Pour les effets visuels affixes dans `lyala:`, l'editeur propose aussi les formes generees depuis `siz`, `scale`, `cld`, `vivid`, `col`, `glow`, `dcp`, `density`, `dsg`, `chaos`, `vts`, `glitch`, etc. L'inspecteur affiche alors les affixes visuels et degres, par exemple `SIZ/6 scale`, `COL/2 luminescent-glowing` ou `DCP/3 concentrated-condensed`.
+
 Dans un bloc de mode, la completion devient contextuelle :
 
 - sous `alkala:`, elle propose les mots audio et les formes audio affixees ;
-- sous `lyala:`, elle propose les mots compatibles avec l'image fixe ;
-- sous `lyula:`, elle propose les mots compatibles avec l'animation.
+- sous `lyala:` et `lyula:`, elle propose tout le vocabulaire visuel : le moteur en champs etant unique, une primitive d'image s'anime dans `lyula:` (meme champ, temps qui s'ecoule) et un mot de mouvement se fige dans `lyala:` (le champ a `t = 0`, comme une pose longue).
 
-L'inspecteur affiche aussi les modes compatibles du mot. Les mots communs, comme les premiers mots de glitch, ne sont proposes dans plusieurs modes que parce que cette compatibilite est declaree explicitement.
+L'inspecteur affiche aussi les modes compatibles du mot. Seule la musique reste un vocabulaire separe ; les mots de glitch sont declares compatibles avec les trois modes.
 
 ## Routage des modes
 
@@ -105,7 +106,7 @@ alkala:
 
 lyala:
   fřala ftala špala allwala
-  avtala ufthala amzmala etçvala
+  avtalöxa ufthalölba amzmaläňva etçvalöxäňva
 
 lyula:
   trala glala
@@ -132,6 +133,30 @@ Concretement :
 La premiere passe concerne uniquement le son. Les effets image / animation auront leurs propres mots et affixes plus tard.
 
 Le cadrage est documente dans [Effets audio](effets-audio.md).
+
+## Effets visuels gradues
+
+Pour les images fixes, la syntaxe canonique suit la meme logique morphologique :
+
+```text
+forme image + affixes visuels gradues = une meme primitive visuelle modulee
+```
+
+Exemples :
+
+```ikal
+lyala:
+  avtala          # filaments simples
+  avtalöxa       # SIZ/6 : filaments plus amples
+  ufthalölba     # CLD/6 : nuage plus vivid
+  amzmaläňva     # COL/2 : trace lumineuse / glow
+  avtalexva      # DCP/3 : filaments plus concentres / denses
+  avtalävha      # DSG/2 : filaments plus turbulents
+  avtaläňfa      # VTS/2 : filaments plus fractures / disjoints
+  etçvalöxäňva   # SIZ/6 + COL/2 : eclats plus grands et lumineux
+```
+
+Le cadrage est documente dans [Effets visuels](effets-visuels.md).
 
 ## Etat de transition
 

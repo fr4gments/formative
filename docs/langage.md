@@ -7,6 +7,7 @@ Cette page conserve les notes techniques issues de l'implementation. La referenc
 - [Migration POC](migration-poc.md)
 - [Parametres artistiques](params.md)
 - [Effets audio](effets-audio.md)
+- [Effets visuels](effets-visuels.md)
 
 ## Etape 2 - vraies formes Ithkuil
 
@@ -71,10 +72,11 @@ Voir [Parametres artistiques](params.md) pour le contrat detaille.
 Les parametres finaux de l'app sont resolus comme :
 
 ```text
-baseParams + audioEffects -> params
+baseParams + audioEffects + visualAffixes + visualEffects -> params
 ```
 
 `audioEffects` designe les effets audio portes par des affixes Ithkuil gradues. Les variations numeriques documentees passent par les degres d'affixes audio.
+`visualAffixes` conserve les degres des affixes visuels retenus pour `lyala:`, puis `visualEffects` expose les valeurs moteur derivees.
 
 ## Etape 4 - affixes audio
 
@@ -84,9 +86,17 @@ Cette tranche ne generalise pas les effets a tout le visuel. Elle cible seulemen
 - les proprietes de source viennent autant que possible du mot lui-meme : Function, Ca.configuration, Ca.essence, famille lexicale ;
 - les effets audio viennent d'affixes gradues sur le meme formative ;
 - plusieurs affixes audio sur le meme mot se cumulent sur le meme evenement sonore ;
-- les effets visuels seront definis plus tard avec leurs propres mots et affixes.
+- les effets visuels ont leur propre premiere passe pour `lyala:` avec `SIZ`, `CLD`, `COL`, `DCP`, `DSG` et `VTS`.
 
 Voir [Effets audio](effets-audio.md) pour les affixes retenus `ITY`, `MDL`, `FRC`, `OPF`, `FLS` et `DTS`.
+
+## Etape 5.5 - affixes visuels image fixe
+
+La premiere tranche d'effets visuels applique les affixes New Ithkuil `SIZ`, `CLD`, `COL`, `DCP`, `DSG` et `VTS` aux primitives `lyala:`.
+
+Ces affixes sont generes par `scripts/generate-visual-affixed-forms.mjs` et reconnus via `src/parser/generated/ikal-visual-affixed-forms.js`, comme les affixes audio le sont pour le son.
+
+Voir [Effets visuels](effets-visuels.md) pour les decisions de mapping.
 
 ## Etape 5 - modes de couches
 
@@ -104,13 +114,17 @@ Dans l'interface actuelle, `lancer` route toujours `alkala:` vers le moteur audi
 
 Le parser applicatif signale aussi les mots incompatibles avec le mode de leur bloc, par exemple une source sonore dans `lyala:` ou un mot d'image dans `alkala:`.
 
-L'autocompletion utilise la meme logique de compatibilite : la position du curseur determine le bloc courant, puis les suggestions sont filtrees pour `music`, `image` ou `animation`. Les formes audio affixees ne sont proposees que dans `alkala:`. Les mots d'image fixe ne sont pas proposes dans `lyula:` sauf compatibilite explicite, et inversement pour les mots d'animation dans `lyala:`.
+L'autocompletion utilise la meme logique de compatibilite : la position du curseur determine le bloc courant, puis les suggestions sont filtrees pour `music`, `image` ou `animation`. Les formes audio affixees ne sont proposees que dans `alkala:`.
 
-Les moteurs visuels consomment maintenant toute la sequence de chaque couche : `lyala:` combine les mots d'une ligne dans une image fixe, tandis que `lyula:` avance dans les mots de la ligne comme une sequence temporelle d'animation.
+Depuis le moteur visuel unifie, le vocabulaire visuel est symetrique : les primitives d'image (`avtala`, `ufthala`, `fřala`, etc.) et leurs formes affixees s'animent dans `lyula:` (meme champ, temps qui s'ecoule), et les mots de mouvement (`trala`, `glala`) se figent dans `lyala:` (le champ a `t = 0`, comme une pose longue). Seule la musique reste un vocabulaire separe.
+
+En `lyula:`, les mots glitch (`affrala`, `sčala`) deforment toute la ligne en continu : ils n'occupent pas de pas dans la sequence temporelle, exactement comme ils ne dessinent pas de matiere en `lyala:`.
+
+Les moteurs visuels consomment maintenant toute la sequence de chaque couche : `lyala:` conjugue les mots d'une ligne dans une image fixe en champs (rendu ASCII couleur), tandis que `lyula:` avance dans les mots de la ligne comme une sequence temporelle d'animation — le meme moteur en champs, avec le temps qui s'ecoule. Voir [Effets visuels](effets-visuels.md) pour le modele de conjugaison (Affiliation -> operateur).
 
 ## Pont temporaire vers les moteurs
 
-Les moteurs audio / image / animation actuels savent lire les programmes IKAL avec `params`, mais ils passent encore par une vue de compatibilite dans `src/engines/program-view.js`.
+Le moteur audio et l'animation POC historique passent encore par une vue de compatibilite dans `src/engines/program-view.js`.
 
 Cette vue traduit temporairement :
 
@@ -120,7 +134,7 @@ Cette vue traduit temporairement :
 - `effects.tear` / `bitcrush` vers l'ancien effet `-tx` ;
 - `effects.distortion` / `drive` vers l'ancien effet `-šk`.
 
-Ce pont permet de tester les vrais mots Ithkuil dans l'interface sans re-ecrire immediatement les moteurs. Il est temporaire : les moteurs devront ensuite consommer les `params` directement.
+Cote visuel, le moteur en champs (`src/engines/field-visual.js`) consomme directement les `params` de chaque mot (famille, effets visuels, Affiliation) ; il n'utilise la vue de compatibilite que pour normaliser les controles par mot. L'animation POC (`poc-animation.js`) reste branchee pour le vocabulaire POC historique et l'ecran de repos ; elle disparaitra avec la fin de la migration POC.
 
 ## Diagnostics
 
@@ -135,6 +149,9 @@ Diagnostics actuels :
 | `unmapped-params-root` | La racine est connue linguistiquement, mais aucune regle artistique `sens -> params` n'existe encore. |
 | `unsupported-affixes` | Des affixes sont presents et conserves dans `ithkuil`, mais leur effet artistique n'est pas encore defini. |
 | `unsupported-audio-affix-slot` | Un affixe audio reconnu est place dans un slot que la premiere passe IKAL ne mappe pas. |
+| `unsupported-visual-affix-slot` | Un affixe visuel reconnu est place dans un slot que la premiere passe IKAL ne mappe pas. |
 | `too-many-audio-effects` | Trop d'affixes audio actifs sur le meme evenement. |
+| `too-many-visual-effects` | Trop d'affixes visuels actifs sur le meme evenement. |
 | `incompatible-audio-effect` | Effet audio incompatible avec la famille sonore. |
+| `incompatible-visual-effect` | Effet visuel incompatible avec la famille du mot. |
 | `incompatible-layer-mode` | Mot place dans un bloc de mode incompatible. |

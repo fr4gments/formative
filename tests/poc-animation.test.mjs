@@ -131,6 +131,42 @@ const organicFamilies = ["avtala", "ufthala", "amzmala", "etçvala"].map((word) 
 const organicFrames = organicFamilies.map((program) => renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program }));
 assert.equal(new Set(organicFrames).size, organicFrames.length);
 
+const plainFilament = parseIkalProgram("lyala:\n  avtala").imageLayers[0].sequence[0];
+const scaledFilament = parseIkalProgram("lyala:\n  avtalöxa").imageLayers[0].sequence[0];
+assert.notEqual(
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: plainFilament }),
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: scaledFilament }),
+);
+
+const dullCloud = parseIkalProgram("lyala:\n  ufthalilba").imageLayers[0].sequence[0];
+const vividCloud = parseIkalProgram("lyala:\n  ufthalölba").imageLayers[0].sequence[0];
+const glowingTrace = parseIkalProgram("lyala:\n  amzmaläňva").imageLayers[0].sequence[0];
+const plainCloud = parseIkalProgram("lyala:\n  ufthala").imageLayers[0].sequence[0];
+const plainTrace = parseIkalProgram("lyala:\n  amzmala").imageLayers[0].sequence[0];
+assert.equal(
+  Number(visualStyleForProgram(vividCloud, 12)["--ikal-saturate"]) > Number(visualStyleForProgram(dullCloud, 12)["--ikal-saturate"]),
+  true,
+);
+assert.equal(Number(visualStyleForProgram(glowingTrace, 12)["--ikal-saturate"]) > Number(visualStyleForProgram(plainTrace, 12)["--ikal-saturate"]), true);
+assert.equal(
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: vividCloud }),
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: plainCloud }),
+);
+assert.equal(
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: glowingTrace }),
+  renderAsciiFrame({ cols: 14, rows: 5, frame: 12, program: plainTrace }),
+);
+
+const plainVisualLine = parseIkalProgram("lyala:\n  avtala ufthala amzmala").imageLayers[0].sequence;
+const affixedVisualLine = parseIkalProgram("lyala:\n  avtala ufthalölba amzmaläňva").imageLayers[0].sequence;
+const plainVisualLineStyle = visualStyleForPrograms(plainVisualLine, 12);
+const affixedVisualLineStyle = visualStyleForPrograms(affixedVisualLine, 12);
+assert.equal(Number(affixedVisualLineStyle["--ikal-saturate"]) > Number(plainVisualLineStyle["--ikal-saturate"]), true);
+assert.equal(
+  Number(affixedVisualLineStyle["--ikal-red-x"].replace("px", "")) > Number(plainVisualLineStyle["--ikal-red-x"].replace("px", "")),
+  true,
+);
+
 const softDistortion = parseIkalProgram("affrala(0.1)").sequence[0];
 const hardDistortion = parseIkalProgram("affrala(0.9)").sequence[0];
 const softDistortionStyle = visualStyleForProgram(softDistortion, 12);

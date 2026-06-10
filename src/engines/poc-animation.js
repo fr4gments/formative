@@ -98,7 +98,9 @@ const ZERO_CONTROLS = {
   bitcrush: 0,
   brightness: 0,
   chroma: 0,
+  colorShift: 0,
   contrastBoost: 0,
+  darkness: 0,
   diffusion: 0,
   deformation: 0,
   density: 0,
@@ -108,12 +110,18 @@ const ZERO_CONTROLS = {
   ghost: 0,
   glow: 0,
   motion: 0,
+  order: 0,
   roughness: 0,
   saturation: 0,
+  scale: 0,
+  smoothness: 0,
+  spread: 0,
   strands: 0,
   structure: 0,
   tear: 0,
+  transitionGlitch: 0,
   trails: 0,
+  turbulence: 0,
   visualTexture: 0,
 };
 
@@ -272,8 +280,9 @@ function champHalo(x, y, f, controls) {
   const cx = x - 44;
   const cy = y - 20;
   const radius = Math.sqrt(cx * cx + cy * cy);
-  const ring = 1 - clamp(Math.abs(radius - 13 - Math.sin(f * 0.018) * controls.motion * 2.2) / 8.5, 0, 1);
-  const aura = clamp(1 - radius / 34, 0, 1);
+  const size = 0.72 + controls.scale * 0.78;
+  const ring = 1 - clamp(Math.abs(radius - (10 + size * 8) - Math.sin(f * 0.018) * controls.motion * 2.2) / (6.4 + size * 4.2), 0, 1);
+  const aura = clamp(1 - radius / (28 + size * 16), 0, 1);
   const shimmer = 0.5 + 0.5 * Math.sin(radius * 0.74 + x * 0.05 - y * 0.04 + f * 0.04);
 
   return clamp(aura * 0.48 + ring * (0.42 + controls.glow * 0.26) + shimmer * controls.glow * 0.18, 0, 1);
@@ -281,10 +290,11 @@ function champHalo(x, y, f, controls) {
 
 function champFilament(x, y, f, controls) {
   const drift = f * 0.018 * controls.motion;
-  const fold = Math.sin(y * 0.16 + drift) * 3.4 + Math.sin((x + y) * 0.045 - drift) * 4.2;
-  const strandA = 1 - Math.abs(Math.sin((x + fold) * 0.38));
-  const strandB = 1 - Math.abs(Math.sin((x * 0.16 - y * 0.31) + fold * 0.18));
-  const fiber = Math.max(Math.pow(strandA, 8), Math.pow(strandB, 10));
+  const size = 0.72 + controls.scale * 0.92;
+  const fold = Math.sin(y * 0.16 / size + drift) * 3.4 * size + Math.sin((x + y) * 0.045 / size - drift) * 4.2 * size;
+  const strandA = 1 - Math.abs(Math.sin((x + fold) * 0.38 / size));
+  const strandB = 1 - Math.abs(Math.sin((x * 0.16 - y * 0.31) / size + fold * 0.18));
+  const fiber = Math.max(Math.pow(strandA, 5 + 4 / size), Math.pow(strandB, 6 + 5 / size));
   const fray = bruit(x, y, 503 + (f >> 3)) * (0.24 + controls.visualTexture * 0.34);
 
   return clamp(fiber * (0.72 + controls.strands * 0.22) + fray, 0, 1);
@@ -292,9 +302,10 @@ function champFilament(x, y, f, controls) {
 
 function champNuage(x, y, f, controls) {
   const drift = f * 0.012 * controls.motion;
-  const large = 0.5 + 0.5 * Math.sin(x * 0.075 + Math.sin(y * 0.13 + drift) * 2.7);
-  const soft = 0.5 + 0.5 * Math.cos(y * 0.11 - drift + Math.sin(x * 0.09) * 2.3);
-  const grain = bruit(Math.floor(x / 2), Math.floor(y / 2), 613 + (f >> 4));
+  const size = 0.78 + controls.scale * 1.05;
+  const large = 0.5 + 0.5 * Math.sin(x * 0.075 / size + Math.sin(y * 0.13 / size + drift) * 2.7);
+  const soft = 0.5 + 0.5 * Math.cos(y * 0.11 / size - drift + Math.sin(x * 0.09 / size) * 2.3);
+  const grain = bruit(Math.floor(x / (2 + controls.scale * 2)), Math.floor(y / (2 + controls.scale * 2)), 613 + (f >> 4));
   const mass = (large * 0.38 + soft * 0.40 + grain * 0.22);
   const haze = clamp((mass - 0.28) * 1.25, 0, 1);
 
@@ -303,9 +314,10 @@ function champNuage(x, y, f, controls) {
 
 function champTrace(x, y, f, controls) {
   const drift = f * 0.026 * controls.motion;
-  const diagonal = Math.abs(((x + y * 1.72 + drift) % 26) - 13);
-  const curve = Math.abs(Math.sin(x * 0.07 + y * 0.18 + drift) * 5.0);
-  const band = 1 - clamp((diagonal + curve * 0.35) / 7.2, 0, 1);
+  const size = 0.78 + controls.scale * 0.98;
+  const diagonal = Math.abs(((x + y * 1.72 + drift) % (20 + size * 12)) - (10 + size * 6));
+  const curve = Math.abs(Math.sin(x * 0.07 / size + y * 0.18 / size + drift) * 5.0);
+  const band = 1 - clamp((diagonal + curve * 0.35) / (5.2 + size * 3.4), 0, 1);
   const erasure = bruit(x, y, 727) < 0.18 + controls.visualTexture * 0.28 ? 0.38 : 1;
 
   return clamp(Math.pow(band, 1.65) * erasure + controls.trails * 0.12, 0, 1);
@@ -314,9 +326,10 @@ function champTrace(x, y, f, controls) {
 function champEclats(x, y, f, controls) {
   const seed = 811 + Math.floor(f * controls.motion * 0.2);
   const point = bruit(x, y, seed);
-  const shard = point > 0.935 - controls.fracture * 0.05 ? 1 : 0;
-  const diagonal = Math.abs(((x * 1.9 - y + seed * 0.03) % 17) - 8.5);
-  const streak = diagonal < 1.2 && bruit(Math.floor(x / 3), Math.floor(y / 2), seed + 17) > 0.62 ? 0.76 : 0;
+  const size = 0.7 + controls.scale * 1.25;
+  const shard = point > 0.948 - controls.fracture * 0.05 - controls.scale * 0.04 ? 1 : 0;
+  const diagonal = Math.abs(((x * 1.9 - y + seed * 0.03) % (13 + size * 8)) - (6.5 + size * 4));
+  const streak = diagonal < 0.8 + size * 0.9 && bruit(Math.floor(x / 3), Math.floor(y / 2), seed + 17) > 0.62 ? 0.76 : 0;
   const spark = Math.max(shard, streak);
 
   return clamp(spark * (0.82 + controls.glow * 0.16) + bruit(x, y, seed + 31) * 0.08, 0, 1);
@@ -324,8 +337,9 @@ function champEclats(x, y, f, controls) {
 
 function champMatiere(x, y, f, controls) {
   const grain = bruit(x, y, 941 + (f >> 5));
-  const weave = 0.5 + 0.5 * Math.sin(x * 0.7 + Math.sin(y * 0.23) * 1.5);
-  const stain = 0.5 + 0.5 * Math.cos((x - y) * 0.17 + grain * 2.5);
+  const size = 0.74 + controls.scale * 0.94;
+  const weave = 0.5 + 0.5 * Math.sin(x * 0.7 / size + Math.sin(y * 0.23 / size) * 1.5);
+  const stain = 0.5 + 0.5 * Math.cos((x - y) * 0.17 / size + grain * 2.5);
 
   return clamp(grain * 0.44 + weave * controls.visualTexture * 0.32 + stain * 0.26, 0, 1);
 }
@@ -525,18 +539,21 @@ export function glyphColor(x, y, f, p) {
   const palette = paletteForProgram(p);
   const controls = view?.controls || ZERO_CONTROLS;
   const depth = p ? clamp(champVal(x, y, f, p), 0, 1) : bruit(x, y, f >> 3);
-  const chromaWave = Math.sin(x * 0.13 + y * 0.21 + f * 0.02) * controls.chroma * 0.22;
+  const chromaWave = Math.sin(x * 0.13 + y * 0.21 + f * 0.02) * controls.chroma * (0.22 + controls.colorShift * 0.28);
+  const shiftWave = Math.sin(x * 0.27 - y * 0.19 + depth * 4.2) * controls.colorShift * 0.22;
   const grad = clamp((x + y * 0.8) / 90 + depth * 0.65 + chromaWave, 0, 1);
-  const base = grad < 0.5
-    ? mixColor(palette[0], palette[1], grad * 2)
-    : mixColor(palette[1], palette[2], (grad - 0.5) * 2);
+  const shifted = clamp(grad + shiftWave, 0, 1);
+  const base = shifted < 0.5
+    ? mixColor(palette[0], palette[1], shifted * 2)
+    : mixColor(palette[1], palette[2], (shifted - 0.5) * 2);
   const ghost = 1 - controls.ghost * 0.42;
   const light = controls.brightness * 0.28;
+  const dark = 1 - controls.darkness * 0.42;
 
   return [
-    clamp(Math.round(base[0] * ghost + 255 * light), 0, 255),
-    clamp(Math.round(base[1] * ghost + 255 * light), 0, 255),
-    clamp(Math.round(base[2] * ghost + 255 * light), 0, 255),
+    clamp(Math.round((base[0] * ghost + 255 * light) * dark), 0, 255),
+    clamp(Math.round((base[1] * ghost + 255 * light) * dark), 0, 255),
+    clamp(Math.round((base[2] * ghost + 255 * light) * dark), 0, 255),
   ];
 }
 
@@ -569,8 +586,8 @@ export function visualStyleForProgram(program, frame = 0) {
     : sk > 0.2
       ? "rgba(255,186,67,0.86)"
       : "rgba(" + palette[1][0] + "," + palette[1][1] + "," + palette[1][2] + ",0.74)";
-  const chroma = (0.45 + level * 2.4 + tx * 1.2 + jitter * 3.2).toFixed(2) + "px";
-  const cyan = (-0.35 - level * 1.8 - jitter * 2.6).toFixed(2) + "px";
+  const chroma = (0.45 + level * 2.4 + tx * 1.2 + jitter * 3.2 + controls.chroma * 1.8 + controls.colorShift * 2.2 + controls.glow * 0.7).toFixed(2) + "px";
+  const cyan = (-0.35 - level * 1.8 - jitter * 2.6 - controls.chroma * 1.1 - controls.colorShift * 1.8 - controls.glow * 0.45).toFixed(2) + "px";
   const skew = ((pulse - 0.5) * level * 1.7).toFixed(3) + "deg";
 
   return {
@@ -595,19 +612,37 @@ export function visualStyleForProgram(program, frame = 0) {
       sk * 0.12 +
       controls.roughness * 0.10 +
       controls.contrastBoost * 0.46 +
-      controls.structure * 0.12
+      controls.structure * 0.12 +
+      controls.darkness * 0.28
     ).toFixed(2),
     "--ikal-saturate": (
       1.18 +
       level * 0.95 +
       tx * 0.30 +
       controls.saturation * 0.42 +
-      controls.chroma * 0.78 +
-      controls.glow * 0.22
+      controls.chroma * 1.35 +
+      controls.glow * 0.55 +
+      controls.colorShift * 0.78
     ).toFixed(2),
     "--ikal-scan": (0.12 + level * 0.18).toFixed(2),
-    "--ikal-band-alpha": (0.16 + level * 0.26 + tx * 0.10 + controls.diffusion * 0.05 + controls.strands * 0.05).toFixed(2),
+    "--ikal-band-alpha": (0.16 + level * 0.26 + tx * 0.10 + controls.diffusion * 0.05 + controls.strands * 0.05 + controls.chroma * 0.10 + controls.colorShift * 0.12).toFixed(2),
   };
+}
+
+function aggregateControls(programs) {
+  const merged = { ...ZERO_CONTROLS };
+
+  for (const program of programs) {
+    const controls = controlsForProgram(program);
+
+    for (const [key, value] of Object.entries(controls)) {
+      if (typeof value === "number" && Number.isFinite(value)) {
+        merged[key] = Math.max(merged[key] || 0, value);
+      }
+    }
+  }
+
+  return merged;
 }
 
 export function visualStyleForPrograms(programs, frame = 0) {
@@ -625,15 +660,24 @@ export function visualStyleForPrograms(programs, frame = 0) {
   const secondaryPalette = paletteForProgram(secondary);
   const tertiaryPalette = paletteForProgram(tertiary);
   const accent = accentForProgram(clean[clean.length - 1]);
+  const controls = aggregateControls(clean);
+  const hot = mixColor(secondaryPalette[1], tertiaryPalette[2], clamp(0.50 + controls.brightness * 0.24 + controls.glow * 0.18, 0, 1));
+  const glow = controls.glow > 0.25
+    ? "rgba(" + hot[0] + "," + hot[1] + "," + hot[2] + ",0.96)"
+    : base["--ikal-glow"];
 
   return {
     ...base,
     "--ikal-a": colorToCss(primaryPalette[0]),
     "--ikal-b": colorToCss(secondaryPalette[1]),
-    "--ikal-c": colorToCss(tertiaryPalette[2]),
+    "--ikal-c": colorToCss(hot),
     "--ikal-d": colorToCss(mixColor(accent, secondaryPalette[2], 0.24)),
-    "--ikal-band-alpha": clamp(Number(base["--ikal-band-alpha"]) + clean.length * 0.055, 0, 0.72).toFixed(2),
-    "--ikal-saturate": clamp(Number(base["--ikal-saturate"]) + clean.length * 0.12, 1, 3.2).toFixed(2),
+    "--ikal-glow": glow,
+    "--ikal-red-x": (Number(base["--ikal-red-x"].replace("px", "")) + controls.chroma * 1.2 + controls.colorShift * 1.6 + controls.glow * 0.6).toFixed(2) + "px",
+    "--ikal-cyan-x": (Number(base["--ikal-cyan-x"].replace("px", "")) - controls.chroma * 0.9 - controls.colorShift * 1.4 - controls.glow * 0.45).toFixed(2) + "px",
+    "--ikal-band-alpha": clamp(Number(base["--ikal-band-alpha"]) + clean.length * 0.055 + controls.chroma * 0.08 + controls.colorShift * 0.08, 0, 0.82).toFixed(2),
+    "--ikal-contrast": clamp(Number(base["--ikal-contrast"]) + controls.contrastBoost * 0.34 + controls.darkness * 0.20, 1, 2.8).toFixed(2),
+    "--ikal-saturate": clamp(Number(base["--ikal-saturate"]) + clean.length * 0.12 + controls.chroma * 0.70 + controls.glow * 0.28 + controls.colorShift * 0.40, 1, 4.2).toFixed(2),
   };
 }
 

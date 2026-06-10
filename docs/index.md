@@ -17,8 +17,10 @@ La version en cours travaille l'etape 5 : blocs de modes stricts, routage par mo
 - les effets audio sont definis comme des affixes Ithkuil gradues sur les formes sonores reconnues ;
 - les declarations `alkala:`, `lyala:`, `lyula:` isolent les couches musique / image fixe / animation ;
 - l'interface route l'audio, l'image fixe et l'animation par mode, avec autocompletion filtree selon le bloc courant ;
-- les moteurs visuels consomment maintenant toute la sequence de chaque ligne : composition statique en `lyala:`, sequence temporelle en `lyula:`.
+- le visuel est un moteur unifie en champs rendu en ASCII couleur : `lyala:` conjugue les mots d'une ligne en image fixe (frame figee), `lyula:` fait avancer la sequence dans le temps — meme calcul, temps qui s'ecoule ;
+- les mots d'une ligne se conjuguent (territoires / sculpture / deformation) selon l'Affiliation Ithkuil, au lieu de s'additionner ;
 - l'image fixe dispose d'une premiere surface organique : lumiere/halo, couleur, forme, matiere, filaments, nuages, traces, eclats et glitch statique.
+- `lyala:` accepte une premiere tranche d'affixes visuels gradues : `SIZ`, `CLD`, `COL`, `DCP`, `DSG`, `VTS`.
 
 ## Lire ensuite
 
@@ -27,3 +29,4 @@ La version en cours travaille l'etape 5 : blocs de modes stricts, routage par mo
 - [Migration POC](migration-poc.md) : remplacement de `kal`, `ras`, `sus`, etc.
 - [Parametres artistiques](params.md) : contrat `ithkuil` vers `params`, avec les affixes audio et les limites actuelles.
 - [Effets audio](effets-audio.md) : affixes retenus pour la premiere passe audio.
+- [Effets visuels](effets-visuels.md) : affixes retenus pour la premiere passe image fixe.

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>IKAL — prototype moteur en champs (Étape 5.6)</title>
+<style>
+  body {
+    background: #06080a;
+    color: #b8c4c4;
+    font-family: ui-monospace, "JetBrains Mono", "Fira Code", monospace;
+    margin: 0;
+    padding: 18px 22px;
+  }
+  h1 {
+    color: #0cefff;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0 0 4px;
+  }
+  .note {
+    color: #5d6c6c;
+    font-size: 11px;
+    margin: 0 0 14px;
+  }
+  .controls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  textarea {
+    background: #0b1014;
+    border: 1px solid #1d2a2e;
+    border-radius: 4px;
+    color: #e8fff6;
+    flex: 1 1 420px;
+    font-family: inherit;
+    font-size: 14px;
+    min-height: 52px;
+    padding: 8px 10px;
+    resize: vertical;
+  }
+  select, button, label {
+    background: #0b1014;
+    border: 1px solid #1d2a2e;
+    border-radius: 4px;
+    color: #b8c4c4;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 7px 10px;
+  }
+  button {
+    background: #0cefff;
+    border: none;
+    color: #04282c;
+    cursor: pointer;
+    font-weight: 700;
+  }
+  label { border: none; background: none; padding: 0; }
+  .scaffold {
+    color: #5d6c6c;
+    font-size: 10px;
+    width: 100%;
+  }
+  #screen {
+    background: #06080a;
+    font-size: 13px;
+    line-height: 13px;
+    letter-spacing: 0;
+    margin: 14px 0 10px;
+    user-select: none;
+    white-space: pre;
+  }
+  #diagnostics { color: #ff8c5a; font-size: 11px; min-height: 16px; }
+  details { color: #748383; font-size: 11px; margin-top: 10px; }
+  details code { color: #9be8d2; }
+  td { padding: 1px 14px 1px 0; }
+</style>
+</head>
+<body>
+<h1>IKAL — moteur visuel en champs (prototype Étape 5.6)</h1>
+<p class="note">Une primitive = un champ. Un affixe = une transformation. Les mots se conjuguent, ils ne s'additionnent pas. Image fixe = temps figé ; animation = même calcul + temps.</p>
+
+<div class="controls">
+  <textarea id="program" spellcheck="false">avtalävha ufthala
+etçvalöxäňva</textarea>
+  <select id="operator"></select>
+  <label><input type="checkbox" id="animate"> animer (lyula)</label>
+  <button id="run">exécuter</button>
+  <span class="scaffold">⚠ le sélecteur d'opérateur et la case « animer » sont des échafaudages de test : à terme, l'opérateur sera porté par l'Affiliation du mot, et le mode par <code>lyala:</code> / <code>lyula:</code>.</span>
+</div>
+
+<pre id="screen"></pre>
+<div id="diagnostics"></div>
+
+<details>
+  <summary>vocabulaire du prototype</summary>
+  <table id="vocab"></table>
+</details>
+
+<script type="module">
+  import {
+    OPERATORS,
+    compileProgram,
+    frameToHtml,
+    renderFrame,
+    vocabularyEntries,
+  } from "./field-engine.js";
+
+  const programInput = document.getElementById("program");
+  const operatorSelect = document.getElementById("operator");
+  const animateCheckbox = document.getElementById("animate");
+  const runButton = document.getElementById("run");
+  const screen = document.getElementById("screen");
+  const diagnostics = document.getElementById("diagnostics");
+  const vocabTable = document.getElementById("vocab");
+
+  for (const [name, label] of Object.entries(OPERATORS)) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name + " — " + label;
+    operatorSelect.appendChild(option);
+  }
+
+  for (const entry of vocabularyEntries()) {
+    const row = document.createElement("tr");
+    const affixes = Object.entries(entry.affixes)
+      .map(([name, degree]) => name + "/" + degree)
+      .join(" + ");
+    row.innerHTML = "<td><code>" + entry.word + "</code></td><td>" + entry.family
+      + "</td><td>" + (affixes || "—") + "</td>";
+    vocabTable.appendChild(row);
+  }
+
+  let compiled = null;
+  let animationHandle = null;
+  let startedAt = 0;
+
+  function drawFrame(t) {
+    const frame = renderFrame(compiled, {
+      cols: 110,
+      operator: operatorSelect.value,
+      rows: 50,
+      t,
+    });
+    screen.innerHTML = frameToHtml(frame);
+  }
+
+  function stopAnimation() {
+    if (animationHandle !== null) {
+      cancelAnimationFrame(animationHandle);
+      animationHandle = null;
+    }
+  }
+
+  function loop(now) {
+    drawFrame((now - startedAt) / 1000);
+    animationHandle = requestAnimationFrame(loop);
+  }
+
+  function run() {
+    stopAnimation();
+    compiled = compileProgram(programInput.value);
+    diagnostics.textContent = compiled.diagnostics.join(" · ");
+
+    if (!compiled.layers.length) {
+      screen.textContent = "";
+      return;
+    }
+
+    if (animateCheckbox.checked) {
+      startedAt = performance.now();
+      animationHandle = requestAnimationFrame(loop);
+    } else {
+      drawFrame(0);
+    }
+  }
+
+  runButton.addEventListener("click", run);
+  programInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      run();
+    }
+  });
+  operatorSelect.addEventListener("change", () => {
+    if (compiled) {
+      run();
+    }
+  });
+  animateCheckbox.addEventListener("change", () => {
+    if (compiled) {
+      run();
+    }
+  });
+
+  run();
+</script>
+</body>
+</html>

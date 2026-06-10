@@ -22,6 +22,25 @@ function createElementStub() {
   };
 }
 
+function layerTexts(layers) {
+  return layers.map((layer) => layer.sequence.map((program) => program.text));
+}
+
+function createVisualStub(calls, screen) {
+  return () => ({
+    animate: ({ cols, rows, layers }) => calls.push(["animate", cols, rows, layerTexts(layers)]),
+    clear: () => calls.push("visual-clear"),
+    drawStill: ({ cols, rows, layers }) => {
+      calls.push(["still", cols, rows, layerTexts(layers)]);
+
+      if (screen) {
+        screen.textContent = "fixed image";
+      }
+    },
+    stop: () => {},
+  });
+}
+
 const cmd = createElementStub();
 const readout = createElementStub();
 const runButton = createElementStub();
@@ -73,12 +92,7 @@ const app = createIkalPocApp({
       calls.push("animation-start");
     },
   }),
-  createImage: () => ({
-    draw: ({ cols, rows, program, programs }) => {
-      calls.push(["image-draw", cols, rows, program, programs]);
-      screen.textContent = "fixed image";
-    },
-  }),
+  createVisual: createVisualStub(calls, screen),
 });
 
 app.start();
@@ -94,6 +108,7 @@ cmd.dispatch("keydown", {
 
 assert.deepEqual(calls.slice(1), [
   "prevent-default",
+  "visual-clear",
   "animation-resume",
   "music-start",
   ["layers", [{ sequence, text: "kal" }]],
@@ -105,7 +120,7 @@ stillButton.dispatch("click", {});
 assert.deepEqual(calls.slice(-3), [
   "clear",
   "animation-pause",
-  ["image-draw", 12, 5, undefined, [sequence[0]]],
+  ["still", 12, 5, [["kal"]]],
 ]);
 assert.equal(screen.textContent, "fixed image");
 assert.equal(readout.className, "ok");
@@ -114,7 +129,8 @@ assert.equal(cmd.focused, true);
 
 cmd.value = "kal\nras";
 runButton.dispatch("click", {});
-assert.deepEqual(calls.slice(-3), [
+assert.deepEqual(calls.slice(-4), [
+  "visual-clear",
   "animation-resume",
   "music-start",
   [
@@ -137,7 +153,7 @@ assert.equal(readout.textContent, "✗ mot inconnu : « bad »");
 cmd.dispatch("keydown", { key: "Escape" });
 assert.equal(readout.className, "");
 assert.equal(readout.textContent, "— silence —");
-assert.deepEqual(calls.slice(-2), ["clear", "animation-resume"]);
+assert.deepEqual(calls.slice(-3), ["clear", "visual-clear", "animation-resume"]);
 
 const realCalls = [];
 const realReadout = createElementStub();
@@ -160,17 +176,15 @@ const realApp = createIkalPocApp({
     resume: () => realCalls.push("animation-resume"),
     start: () => realCalls.push("animation-start"),
   }),
-  createImage: () => ({
-    draw: ({ programs }) => realCalls.push(["image-draw", programs]),
-  }),
+  createVisual: createVisualStub(realCalls),
 });
 
 realApp.lance("ļtala alxrasa\načxwuža pswatļa");
 assert.equal(realReadout.className, "ok");
 assert.equal(realReadout.textContent, "▶ 2 couches   ·   4 mots superposés");
-assert.equal(realCalls[2][0], "layers");
-assert.equal(realCalls[2][1][0].sequence[0].params.family, "click");
-assert.equal(realCalls[2][1][1].sequence[0].params.family, "noise");
+assert.equal(realCalls[3][0], "layers");
+assert.equal(realCalls[3][1][0].sequence[0].params.family, "click");
+assert.equal(realCalls[3][1][1].sequence[0].params.family, "noise");
 
 const routedCalls = [];
 const routedReadout = createElementStub();
@@ -187,19 +201,13 @@ const routedApp = createIkalPocApp({
     setLayers: (nextLayers) => routedCalls.push(["layers", nextLayers]),
     start: () => routedCalls.push("music-start"),
   }),
-  createAnimation: ({ getPrograms }) => ({
+  createAnimation: () => ({
     getSize: () => ({ cols: 12, rows: 5 }),
     pause: () => routedCalls.push("animation-pause"),
-    resume: () => routedCalls.push([
-      "animation-programs",
-      getPrograms(0).map((program) => program.text),
-      getPrograms(24).map((program) => program.text),
-    ]),
+    resume: () => routedCalls.push("animation-resume"),
     start: () => routedCalls.push("animation-start"),
   }),
-  createImage: () => ({
-    draw: ({ programs }) => routedCalls.push(["image-draw", programs.map((program) => program.text)]),
-  }),
+  createVisual: createVisualStub(routedCalls),
 });
 
 const routedProgram = "alkala:\n  ļtala\nlyala:\n  fřala ftala\nlyula:\n  trala glala";
@@ -210,16 +218,17 @@ assert.equal(
   routedReadout.textContent,
   "▶ musique 1 couche / 1 mot   ·   image 1 couche / 2 mots   ·   animation 1 couche / 2 mots   ·   visuel animation",
 );
-assert.deepEqual(routedCalls[0], ["animation-programs", ["trala"], ["glala"]]);
-assert.equal(routedCalls[1], "music-start");
-assert.equal(routedCalls[2][0], "layers");
-assert.deepEqual(routedCalls[2][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
+assert.equal(routedCalls[0], "animation-pause");
+assert.deepEqual(routedCalls[1], ["animate", 12, 5, [["trala", "glala"]]]);
+assert.equal(routedCalls[2], "music-start");
+assert.equal(routedCalls[3][0], "layers");
+assert.deepEqual(routedCalls[3][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
 
 routedApp.imageFixe(routedProgram);
 assert.deepEqual(routedCalls.slice(-3), [
   "clear",
   "animation-pause",
-  ["image-draw", ["fřala", "ftala"]],
+  ["still", 12, 5, [["fřala", "ftala"]]],
 ]);
 
 const imageLastProgram = "alkala:\n  ļtala\nlyula:\n  trala glala\nlyala:\n  fřala ftala";
@@ -231,7 +240,7 @@ assert.equal(
 );
 const imageLastTail = routedCalls.slice(-4);
 assert.deepEqual(imageLastTail[0], "animation-pause");
-assert.deepEqual(imageLastTail[1], ["image-draw", ["fřala", "ftala"]]);
+assert.deepEqual(imageLastTail[1], ["still", 12, 5, [["fřala", "ftala"]]]);
 assert.equal(imageLastTail[2], "music-start");
 assert.equal(imageLastTail[3][0], "layers");
 assert.deepEqual(imageLastTail[3][1].map((layer) => layer.sequence[0].text), ["ļtala"]);

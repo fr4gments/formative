@@ -1,6 +1,6 @@
 import { createIkalAutocomplete } from "./editor/ikal-autocomplete.js";
+import { createFieldVisual } from "./engines/field-visual.js";
 import { createPocAnimation } from "./engines/poc-animation.js";
-import { createPocImage } from "./engines/poc-image.js";
 import { createPocMusic } from "./engines/poc-music.js";
 import { parseIkalProgram } from "./parser/ikal-parser.js";
 
@@ -14,17 +14,19 @@ export function createIkalPocApp({
   parse = parseIkalProgram,
   createMusic = createPocMusic,
   createAnimation = createPocAnimation,
-  createImage = createPocImage,
+  createVisual = createFieldVisual,
   createAutocomplete = createIkalAutocomplete,
 }) {
   const music = createMusic();
   let activeAnimationLayers = [];
+  // Animation POC : conservée pour le vocabulaire POC historique et l'écran
+  // de repos. Les couches IKAL visuelles passent par le moteur en champs.
   const animation = createAnimation({
     screen,
     getProgram: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame)[0] || null,
     getPrograms: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame),
   });
-  const image = createImage({ screen });
+  const visual = createVisual({ screen });
   const autocomplete = createAutocomplete({
     panel: autocompletePanel,
     textarea: cmd,
@@ -121,17 +123,30 @@ export function createIkalPocApp({
       activeAnimationLayers = [];
       animation.pause();
       const { cols, rows } = animation.getSize();
-      image.draw({
+      visual.drawStill({
         cols,
+        layers: routedLayers.imageLayers,
         rows,
-        programs: allProgramsForLayers(routedLayers.imageLayers),
       });
       return "image";
+    }
+
+    if (visualMode === "animation" && !routedLayers.legacyVisual) {
+      activeAnimationLayers = [];
+      animation.pause();
+      const { cols, rows } = animation.getSize();
+      visual.animate({
+        cols,
+        layers: routedLayers.animationLayers,
+        rows,
+      });
+      return "animation";
     }
 
     activeAnimationLayers = visualMode === "animation" || routedLayers.legacyVisual
       ? routedLayers.animationLayers
       : [];
+    visual.clear();
     animation.resume();
     animation.dessine?.();
     return visualMode || (activeAnimationLayers.length ? "animation" : null);
@@ -140,6 +155,7 @@ export function createIkalPocApp({
   function silence() {
     activeAnimationLayers = [];
     music.clearSequence();
+    visual.clear();
     animation.resume();
     readout.textContent = "— silence —";
     readout.className = "";
@@ -208,10 +224,10 @@ export function createIkalPocApp({
     const routedLayers = layersForResult(result);
     const programs = allProgramsForLayers(routedLayers.imageLayers);
 
-    image.draw({
+    visual.drawStill({
       cols,
+      layers: routedLayers.imageLayers,
       rows,
-      programs,
     });
 
     if (programs.length === 1) {
