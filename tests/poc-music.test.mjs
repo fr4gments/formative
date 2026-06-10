@@ -294,4 +294,84 @@ assert.deepEqual(messages, [
   },
 ]);
 
+// Contexte non sécurisé : pas d'AudioWorklet -> mode secours ScriptProcessor,
+// même synthèse, le son joue quand même.
+let fallbackNode = null;
+
+class InsecureAudioContext {
+  constructor() {
+    this.destination = "destination";
+    this.sampleRate = 44100;
+    this.state = "running";
+  }
+
+  createScriptProcessor(bufferSize, inputs, outputs) {
+    fallbackNode = {
+      bufferSize,
+      connected: null,
+      inputs,
+      onaudioprocess: null,
+      outputs,
+      connect(destination) {
+        this.connected = destination;
+      },
+    };
+    return fallbackNode;
+  }
+}
+
+const fallbackMusic = createPocMusic({
+  win: { AudioContext: InsecureAudioContext, console: { warn: () => {} } },
+});
+fallbackMusic.setLayers([{ sequence: [kal, ras], text: "kal ras" }]);
+await fallbackMusic.start();
+assert.equal(fallbackMusic.isFallback(), true);
+assert.equal(fallbackNode.connected, "destination");
+assert.deepEqual([fallbackNode.bufferSize, fallbackNode.inputs, fallbackNode.outputs], [2048, 0, 1]);
+
+const fallbackBuffer = new Float32Array(64);
+fallbackNode.onaudioprocess({ outputBuffer: { getChannelData: () => fallbackBuffer } });
+assert.equal([...fallbackBuffer].every((value) => Number.isFinite(value) && value >= -1 && value <= 1), true);
+assert.equal(fallbackMusic.getCurrentStep(), 0);
+
+// Ni AudioWorklet ni ScriptProcessor : erreur lisible.
+await assert.rejects(
+  () => createPocMusic({
+    win: { AudioContext: class { constructor() { this.state = "running"; } } },
+  }).start(),
+  /AudioWorklet et ScriptProcessor indisponibles/,
+);
+
+// Pas de Web Audio du tout.
+await assert.rejects(() => createPocMusic({ win: {} }).start(), /Web Audio API indisponible/);
+
+// Un échec de chargement du worklet n'est pas mis en cache : on peut réessayer.
+let attempts = 0;
+
+class FlakyAudioContext {
+  constructor() {
+    this.audioWorklet = {
+      addModule: async () => {
+        attempts++;
+
+        if (attempts === 1) {
+          throw new Error("module introuvable");
+        }
+      },
+    };
+    this.destination = "destination";
+    this.state = "running";
+  }
+}
+
+const retryMusic = createPocMusic({
+  win: {
+    AudioContext: FlakyAudioContext,
+    AudioWorkletNode: FakeAudioWorkletNode,
+  },
+});
+await assert.rejects(() => retryMusic.start(), /module introuvable/);
+await retryMusic.start();
+assert.equal(attempts, 2);
+
 console.log("poc-music ok");
