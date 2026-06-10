@@ -8,12 +8,18 @@ export const IKAL_MODE_DECLARATIONS = {
 
 const MODE_ROOT_FORMS = new Set(Object.keys(IKAL_MODE_DECLARATIONS));
 
+// Depuis le moteur visuel unifié en champs, le vocabulaire visuel est
+// symétrique : une primitive d'image s'anime dans lyula: (même champ, temps
+// qui s'écoule) et un mot de mouvement se fige dans lyala: (le champ à t=0,
+// comme une pose longue). Seule la musique reste un domaine séparé.
+const VISUAL_MODES = new Set(["image", "animation"]);
+
 const COMPATIBLE_MODES_BY_DOMAIN = {
-  animation: new Set(["animation"]),
+  animation: VISUAL_MODES,
   glitch: new Set(IKAL_LAYER_MODES),
-  image: new Set(["image"]),
+  image: VISUAL_MODES,
   music: new Set(["music"]),
-  visual: new Set(["image"]),
+  visual: VISUAL_MODES,
 };
 
 export function modeForDeclaration(form) {

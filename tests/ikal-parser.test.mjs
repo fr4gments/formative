@@ -173,6 +173,22 @@ assert.deepEqual(
   ["shape", "texture", "color", "light", "filament", "cloud", "trace", "spark-scatter"],
 );
 
+const affixedImageVocabulary = parseIkalProgram("lyala:\n  avtalöxa ufthalölba amzmaläňva etçvalöxäňva");
+assert.equal(affixedImageVocabulary.error, undefined);
+assert.deepEqual(
+  affixedImageVocabulary.imageLayers[0].sequence.map((program) => program.text),
+  ["avtalöxa", "ufthalölba", "amzmaläňva", "etçvalöxäňva"],
+);
+assert.equal(affixedImageVocabulary.imageLayers[0].sequence[0].params.visualEffects.scale, 0.6);
+assert.equal(affixedImageVocabulary.imageLayers[0].sequence[1].params.visualAffixes.colorDimension, 6);
+assert.equal(affixedImageVocabulary.imageLayers[0].sequence[2].params.visualAffixes.colorAttribute, 2);
+
+const richerAffixedImageVocabulary = parseIkalProgram("lyala:\n  avtalexva avtalävha avtaläňfa");
+assert.equal(richerAffixedImageVocabulary.error, undefined);
+assert.equal(richerAffixedImageVocabulary.imageLayers[0].sequence[0].params.visualAffixes.concentration, 3);
+assert.equal(richerAffixedImageVocabulary.imageLayers[0].sequence[1].params.visualAffixes.organization, 2);
+assert.equal(richerAffixedImageVocabulary.imageLayers[0].sequence[2].params.visualAffixes.transition, 2);
+
 const withModeWord = parseIkalProgram("alkala ļtala");
 assert.equal(withModeWord.error, undefined);
 assert.equal(withModeWord.sequence.length, 1);
@@ -211,10 +227,14 @@ assert.equal(
   parseIkalProgram("alkala:\n  fřala").error,
   "ligne 2 : mot « fřala » du domaine image incompatible avec le mode music",
 );
-assert.equal(
-  parseIkalProgram("lyula:\n  fřala").error,
-  "ligne 2 : mot « fřala » du domaine image incompatible avec le mode animation",
-);
+// Moteur unifié : le vocabulaire visuel est symétrique entre lyala: et lyula:.
+const stillPrimitiveInAnimation = parseIkalProgram("lyula:\n  fřala");
+assert.equal(stillPrimitiveInAnimation.error, undefined);
+assert.equal(stillPrimitiveInAnimation.animationLayers[0].sequence[0].params.family, "shape");
+
+const motionInStillImage = parseIkalProgram("lyala:\n  trala");
+assert.equal(motionInStillImage.error, undefined);
+assert.equal(motionInStillImage.imageLayers[0].sequence[0].params.family, "linear-motion");
 assert.equal(
   parseIkalProgram("alkala:\n  avtala").error,
   "ligne 2 : mot « avtala » du domaine image incompatible avec le mode music",
