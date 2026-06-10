@@ -2,9 +2,9 @@
 
 Les `params` sont l'interface stable entre la verite linguistique Ithkuil, les effets declares dans le programme IKAL, et les moteurs IKAL. Ils ne remplacent pas l'objet `ithkuil` : ils en sont une traduction artistique normalisee.
 
-Cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee au vocabulaire IKAL controle. Elle calcule les valeurs par defaut depuis le sens Ithkuil, lit les affixes audio gradues quand ils sont presents, puis produit les `params` envoyes aux moteurs. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
+Cette couche est implementee dans `src/parser/ithkuil-to-params.js` et reste limitee au vocabulaire IKAL controle. Elle calcule les valeurs par defaut depuis le sens Ithkuil, lit les affixes audio et visuels gradues quand ils sont presents, puis produit les `params` envoyes aux moteurs. Elle est branchee dans l'application via un pont temporaire vers les moteurs POC.
 
-`audioEffects` est la surface canonique pour les effets audio affixes. Les valeurs exposees au langage viennent des categories Ithkuil et, pour le son, des degres d'affixes audio.
+`audioEffects` est la surface canonique pour les effets audio affixes. `visualAffixes` conserve les degres des affixes visuels reconnus, puis `visualEffects` expose les valeurs moteur derivees.
 
 ## Intention
 
@@ -17,7 +17,8 @@ forme Ithkuil
   -> ithkuil
   -> baseParams        // valeurs derivees du sens du mot
   + audioEffects       // effets audio derives des affixes gradues
-  + visualEffects      // effets visuels derives des mots image / glitch
+  + visualAffixes      // degres des affixes visuels reconnus
+  + visualEffects      // effets visuels derives des mots image / affixes image / glitch
   -> params            // valeurs finales envoyees aux moteurs
 ```
 
@@ -29,7 +30,8 @@ IKAL distinguera trois niveaux :
 | --- | --- | --- |
 | `baseParams` | sens Ithkuil parse : racine, Function, Ca, etc. | donne les valeurs par defaut motivees linguistiquement |
 | `audioEffects` | affixes audio gradues sur le formative sonore | module les effets audio du meme evenement |
-| `visualEffects` | mots image fixe / glitch mappes depuis leur sens | module lumiere, couleur, forme, texture, filaments, diffusion, traces et deformation visuelle |
+| `visualAffixes` | affixes visuels gradues sur le formative image | conserve les degres `SIZ`, `CLD`, `COL`, `DCP`, `DSG`, `VTS` retenus |
+| `visualEffects` | mots image fixe / glitch et affixes image mappes depuis leur sens | module lumiere, couleur, forme, texture, filaments, diffusion, traces et deformation visuelle |
 | `params` | resolution finale | objet envoye aux moteurs image / animation / musique |
 
 Regle de conception : un effet IKAL ne doit pas transformer un mot en autre chose. Il peut intensifier, attenuer ou preciser les effets derives du mot, mais la famille semantique reste portee par la forme Ithkuil.
@@ -40,6 +42,7 @@ Le modele de parametres distingue :
 
 - `baseParams` : valeurs derivees du sens Ithkuil ;
 - `audioEffects` : effets audio declares par affixes ;
+- `visualAffixes` : degres des affixes visuels reconnus ;
 - `visualEffects` : effets visuels declares par les mots image fixe et glitch ;
 - `params` : valeurs finales resolues.
 
@@ -55,6 +58,14 @@ Le modele de parametres distingue :
     intensity: 0,
     randomModulation: 0,
     reverb: 0
+  },
+  visualAffixes: {
+    colorAttribute: 0,
+    colorDimension: 0,
+    concentration: 0,
+    organization: 0,
+    transition: 0,
+    scale: 0
   },
   role: "mode" | "voice" | "modifier" | "primitive",
   domain: "music" | "image" | "animation" | "visual" | "glitch",
@@ -89,14 +100,23 @@ Le modele de parametres distingue :
     brightness: 0,
     chroma: 0,
     contrast: 0,
+    colorShift: 0,
+    darkness: 0,
+    density: 0,
     diffusion: 0,
     deformation: 0,
     fracture: 0,
     glow: 0,
+    order: 0,
+    scale: 0,
+    smoothness: 0,
+    spread: 0,
     strands: 0,
     structure: 0,
     texture: 0,
-    trails: 0
+    transitionGlitch: 0,
+    trails: 0,
+    turbulence: 0
   }
 }
 ```
@@ -114,6 +134,20 @@ Dans cette premiere passe, on distingue :
 | Effet audio | affixe gradue comme `ITY`, `MDL`, `FRC`, `OPF`, `FLS`, `DTS` | modifie le son produit par la source |
 
 Voir [Effets audio](effets-audio.md) pour la liste retenue dans la premiere passe.
+
+## Affixes visuels : image fixe seulement
+
+Les effets visuels gradues sont lus depuis les affixes du mot image. Ils ne sont pas proposes dans `alkala:` et ne s'appliquent pas aux sources sonores.
+
+Dans cette premiere passe, on distingue :
+
+| Type | Exemple | Role |
+| --- | --- | --- |
+| Primitive image | `avtala`, `ufthala`, `amzmala`, `etçvala` | choisit la forme visuelle |
+| Propriete de source | famille lexicale, Function, Ca si utile plus tard | donne la base semantique |
+| Effet visuel | affixe gradue comme `SIZ`, `CLD`, `COL`, `DCP`, `DSG`, `VTS` | module la meme primitive sans creer un nouveau mot |
+
+Voir [Effets visuels](effets-visuels.md) pour la premiere liste retenue.
 
 ## Regles actuelles
 
@@ -199,6 +233,9 @@ Si une forme est valide en Ithkuil mais ne peut pas encore produire de `params`,
 | `unmapped-params-root` | Racine connue linguistiquement mais sans regle `sens -> params`. |
 | `unsupported-affixes` | Des affixes sont parses, mais leur effet artistique n'est pas encore defini. |
 | `unsupported-audio-affix-slot` | Affixe audio reconnu, mais place dans un slot que la premiere passe IKAL ne mappe pas. |
+| `unsupported-visual-affix-slot` | Affixe visuel reconnu, mais place dans un slot que la premiere passe IKAL ne mappe pas. |
 | `too-many-audio-effects` | Trop d'affixes audio actifs sur le meme evenement. |
+| `too-many-visual-effects` | Trop d'affixes visuels actifs sur le meme evenement. |
 | `incompatible-audio-effect` | Effet audio non compatible avec la famille sonore. |
+| `incompatible-visual-effect` | Effet visuel non compatible avec la famille du mot. |
 | `incompatible-layer-mode` | Mot place dans un bloc de mode incompatible, par exemple source sonore dans `lyala:`. |

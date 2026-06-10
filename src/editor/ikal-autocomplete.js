@@ -9,6 +9,13 @@ import {
   audioAffixDefinitionFor,
   formatAudioAffixSignature,
 } from "../parser/ikal-audio-affixes.js";
+import {
+  DEFAULT_VISUAL_AFFIX_DEGREES,
+  IKAL_VISUAL_AFFIX_FORMS,
+  formatVisualAffixSignature,
+  labelForVisualAffixDegree,
+  visualAffixDefinitionFor,
+} from "../parser/ikal-visual-affixes.js";
 import { formatParamSignatureForSeedRoot } from "../parser/ikal-param-signatures.js";
 
 const TOKEN_DELIMITER = /[\s(),:]/;
@@ -18,6 +25,7 @@ const NOOP_AUTOCOMPLETE = {
   refresh: () => {},
 };
 const AUDIO_BASE_PRIORITY = ["ļtala", "ačxwuža", "alxrasa", "pswala", "abjala"];
+const VISUAL_BASE_PRIORITY = ["avtala", "ufthala", "amzmala", "etçvala", "allwala", "ftala", "špala", "fřala"];
 const MODE_HEADER = "mode";
 
 export function asciiFold(text) {
@@ -307,6 +315,122 @@ function suggestionFromAudioForm(form, roots, score) {
   };
 }
 
+function isCompletableVisualForm(form) {
+  return !form.slotVAffixes
+    && (form.slotVIIAffixes?.length || 0) > 0
+    && (form.slotVIIAffixes?.length || 0) <= 2
+    && !form.kind?.startsWith("diagnostic");
+}
+
+function baseRootForVisualForm(form, roots) {
+  return roots.find((root) => root.form === form.baseForm);
+}
+
+function aliasesForVisualForm(form) {
+  const affixes = form.slotVIIAffixes || [];
+  const labels = affixes
+    .map((affix) => visualAffixDefinitionFor(affix))
+    .filter(Boolean)
+    .flatMap((definition) => {
+      const degree = affixes.find((affix) => visualAffixDefinitionFor(affix) === definition)?.degree || "";
+      const label = degree ? labelForVisualAffixDegree(definition, degree) : definition.label;
+
+      return [
+        definition.abbreviation,
+        ...(definition.aliases || []),
+        definition.id,
+        definition.label,
+        label,
+        definition.abbreviation + String(degree),
+        definition.id + String(degree),
+      ];
+    });
+  const compactAffixes = affixes
+    .map((affix) => {
+      const definition = visualAffixDefinitionFor(affix);
+
+      return definition ? definition.abbreviation + String(affix.degree) : "";
+    })
+    .join("");
+  const compactLabels = affixes
+    .map((affix) => visualAffixDefinitionFor(affix)?.id || "")
+    .join("");
+  const base = asciiFold(form.baseForm || "");
+
+  return [
+    asciiFold(form.form),
+    base + compactAffixes.toLowerCase(),
+    base + "+" + compactAffixes.toLowerCase(),
+    base + compactLabels.toLowerCase(),
+    ...labels.map(asciiFold),
+  ].filter(Boolean);
+}
+
+function isDefaultDegreeVisualForm(form) {
+  return (form.slotVIIAffixes || []).every((affix) => {
+    const definition = visualAffixDefinitionFor(affix);
+
+    return definition && DEFAULT_VISUAL_AFFIX_DEGREES[definition.abbreviation] === affix.degree;
+  });
+}
+
+function scoreVisualForm(form, query) {
+  const foldedForm = asciiFold(form.form);
+  const aliases = aliasesForVisualForm(form);
+  const defaultBoost = isDefaultDegreeVisualForm(form) ? 20 : 0;
+  const singleBoost = (form.slotVIIAffixes?.length || 0) === 1 ? 30 : 0;
+
+  if (form.form === query) {
+    return 975 + defaultBoost;
+  }
+
+  if (foldedForm === query) {
+    return 875 + defaultBoost;
+  }
+
+  if (aliases.includes(query)) {
+    return 750 + defaultBoost + singleBoost;
+  }
+
+  if (foldedForm.startsWith(query)) {
+    return 590 + defaultBoost - foldedForm.length / 100;
+  }
+
+  if (aliases.some((alias) => alias.startsWith(query))) {
+    return 630 + defaultBoost + singleBoost;
+  }
+
+  if (foldedForm.includes(query)) {
+    return 410 + defaultBoost;
+  }
+
+  return 0;
+}
+
+function visualBaseRank(form) {
+  const index = VISUAL_BASE_PRIORITY.indexOf(form.baseForm);
+
+  return index >= 0 ? index : VISUAL_BASE_PRIORITY.length;
+}
+
+function suggestionFromVisualForm(form, roots, score) {
+  const baseRoot = baseRootForVisualForm(form, roots);
+  const signature = formatVisualAffixSignature(form.slotVIIAffixes);
+
+  return {
+    compatibleModes: ["image", "animation"],
+    cr: baseRoot?.cr || "",
+    domain: baseRoot?.domain || "image",
+    family: baseRoot?.family || "visual-affix",
+    form: form.form,
+    migrationFrom: [],
+    paramSignature: signature,
+    score,
+    sortRank: visualBaseRank(form),
+    sense: (baseRoot?.sense || "image") + " + " + signature,
+  };
+}
+
 export function suggestIkalWords(query, {
   limit = 8,
   mode = null,
@@ -331,8 +455,13 @@ export function suggestIkalWords(query, {
     .map((form) => suggestionFromAudioForm(form, roots, scoreAudioForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const visualSuggestions = IKAL_VISUAL_AFFIX_FORMS
+    .filter(isCompletableVisualForm)
+    .map((form) => suggestionFromVisualForm(form, roots, scoreVisualForm(form, foldedQuery)))
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
 
-  return [...rootSuggestions, ...audioSuggestions]
+  return [...rootSuggestions, ...audioSuggestions, ...visualSuggestions]
     .sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form))
     .slice(0, limit);
 }

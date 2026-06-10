@@ -76,6 +76,22 @@ assert.deepEqual(generatedNoiseReverb.ithkuil.affixes.slotVII, [
   { cs: "mp", degree: 9, type: 1 },
 ]);
 
+const visualScale = parseIthkuilWord("ufthalöxa");
+assert.equal(visualScale.error, undefined);
+assert.equal(visualScale.ithkuil.root, "fth");
+assert.equal(visualScale.ithkuil.stem, 3);
+assert.deepEqual(visualScale.ithkuil.affixes.slotVII, [
+  { cs: "x", degree: 6, type: 1 },
+]);
+
+const visualCombo = parseIthkuilWord("avtalöxäňva");
+assert.equal(visualCombo.error, undefined);
+assert.equal(visualCombo.ithkuil.root, "vt");
+assert.deepEqual(visualCombo.ithkuil.affixes.slotVII, [
+  { cs: "x", degree: 6, type: 1 },
+  { cs: "ňv", degree: 2, type: 1 },
+]);
+
 const referential = parseIthkuilWord("royež");
 assert.equal(referential.error, undefined);
 assert.equal(referential.ithkuil.type, "referential");

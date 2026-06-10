@@ -1,4 +1,5 @@
 import { IKAL_AUDIO_AFFIX_FORMS } from "./ikal-audio-affixes.js";
+import { IKAL_VISUAL_AFFIX_FORMS } from "./ikal-visual-affixes.js";
 import { IKAL_SEED_ROOTS, seedRootForForm } from "./ithkuil-seed-roots.js";
 
 const EXTRA_FORMATIVES = new Map([
@@ -19,7 +20,10 @@ const REFERENTIALS = new Map([
   }],
 ]);
 
-const AFFIXED_FORMATIVES = new Map(IKAL_AUDIO_AFFIX_FORMS.map((form) => [form.form, form]));
+const AFFIXED_FORMATIVES = new Map([
+  ...IKAL_AUDIO_AFFIX_FORMS.map((form) => [form.form, form]),
+  ...IKAL_VISUAL_AFFIX_FORMS.map((form) => [form.form, form]),
+]);
 
 function normalizeText(text) {
   return text.trim();

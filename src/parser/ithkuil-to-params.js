@@ -7,6 +7,14 @@ import {
   paramsEffectsForAudioAffix,
   valueForAudioAffix,
 } from "./ikal-audio-affixes.js";
+import {
+  MAX_ACTIVE_VISUAL_EFFECTS,
+  emptyVisualAffixEffects,
+  isVisualAffixDegreeValid,
+  visualAffixCompatibleWithFamily,
+  visualAffixDefinitionFor,
+  visualEffectsForAffix,
+} from "./ikal-visual-affixes.js";
 
 export const IKAL_PARAMS_VERSION = 1;
 
@@ -24,14 +32,23 @@ const ZERO_VISUAL_EFFECTS = {
   brightness: 0,
   chroma: 0,
   contrast: 0,
+  colorShift: 0,
+  darkness: 0,
+  density: 0,
   diffusion: 0,
   deformation: 0,
   fracture: 0,
   glow: 0,
+  order: 0,
+  scale: 0,
+  smoothness: 0,
+  spread: 0,
   strands: 0,
   structure: 0,
   texture: 0,
+  transitionGlitch: 0,
   trails: 0,
+  turbulence: 0,
 };
 
 const ROOT_PARAM_RULES = {
@@ -222,6 +239,32 @@ function applyAudioEffect(audioEffects, definition, value) {
   audioEffects[definition.id] = clamp01(Math.max(audioEffects[definition.id] || 0, value));
 }
 
+function applyVisualAffixEffect(visualAffixes, definition, degree) {
+  visualAffixes[definition.id] = Math.max(visualAffixes[definition.id] || 0, degree);
+}
+
+function unknownAffixDiagnostics(ithkuil) {
+  const diagnostics = [];
+
+  for (const [slotName, affixes] of [
+    ["Slot V", ithkuil.affixes?.slotV || []],
+    ["Slot VII", ithkuil.affixes?.slotVII || []],
+  ]) {
+    for (const affix of affixes) {
+      if (audioAffixDefinitionFor(affix) || visualAffixDefinitionFor(affix)) {
+        continue;
+      }
+
+      diagnostics.push(diagnostic(
+        "unsupported-affixes",
+        "forme Ithkuil valide, mais affixe " + slotName + " non mappe artistiquement par IKAL : " + affixLabel(affix),
+      ));
+    }
+  }
+
+  return diagnostics;
+}
+
 function audioParamsForAffixes(ithkuil, family) {
   const diagnostics = [];
   const audioEffects = emptyAudioEffects();
@@ -236,11 +279,6 @@ function audioParamsForAffixes(ithkuil, family) {
         "unsupported-audio-affix-slot",
         "affixe audio " + definition.abbreviation + " reconnu, mais IKAL attend les effets audio en Slot VII",
       ));
-    } else {
-      diagnostics.push(diagnostic(
-        "unsupported-affixes",
-        "forme Ithkuil valide, mais affixe Slot V non mappe artistiquement par IKAL : " + affixLabel(affix),
-      ));
     }
   }
 
@@ -248,10 +286,6 @@ function audioParamsForAffixes(ithkuil, family) {
     const definition = audioAffixDefinitionFor(affix);
 
     if (!definition) {
-      diagnostics.push(diagnostic(
-        "unsupported-affixes",
-        "forme Ithkuil valide, mais affixe Slot VII non mappe artistiquement par IKAL : " + affixLabel(affix),
-      ));
       continue;
     }
 
@@ -292,6 +326,65 @@ function audioParamsForAffixes(ithkuil, family) {
   };
 }
 
+function visualParamsForAffixes(ithkuil, family) {
+  const diagnostics = [];
+  const visualAffixes = emptyVisualAffixEffects();
+  const mappedVisualEffects = [];
+  let activeCount = 0;
+
+  for (const affix of ithkuil.affixes?.slotV || []) {
+    const definition = visualAffixDefinitionFor(affix);
+
+    if (definition) {
+      diagnostics.push(diagnostic(
+        "unsupported-visual-affix-slot",
+        "affixe visuel " + definition.abbreviation + " reconnu, mais IKAL attend les effets visuels en Slot VII",
+      ));
+    }
+  }
+
+  for (const affix of ithkuil.affixes?.slotVII || []) {
+    const definition = visualAffixDefinitionFor(affix);
+
+    if (!definition) {
+      continue;
+    }
+
+    if (!isVisualAffixDegreeValid(affix)) {
+      diagnostics.push(diagnostic(
+        "invalid-visual-affix-degree",
+        "degre d'affixe visuel invalide pour " + definition.abbreviation + " : " + String(affix.degree),
+      ));
+      continue;
+    }
+
+    if (!visualAffixCompatibleWithFamily(definition, family)) {
+      diagnostics.push(diagnostic(
+        "incompatible-visual-effect",
+        "effet visuel " + definition.label + " incompatible avec la famille IKAL : " + family,
+      ));
+      continue;
+    }
+
+    activeCount++;
+    applyVisualAffixEffect(visualAffixes, definition, affix.degree);
+    mappedVisualEffects.push(visualEffectsForAffix(definition, affix.degree));
+  }
+
+  if (activeCount > MAX_ACTIVE_VISUAL_EFFECTS) {
+    diagnostics.push(diagnostic(
+      "too-many-visual-effects",
+      "trop d'effets visuels sur le meme evenement : " + activeCount + " actifs, limite initiale " + MAX_ACTIVE_VISUAL_EFFECTS,
+    ));
+  }
+
+  return {
+    diagnostics,
+    visualAffixes,
+    visualEffects: mergeVisualEffects(...mappedVisualEffects),
+  };
+}
+
 export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   if (!ithkuil || ithkuil.type !== "formative") {
     return {
@@ -323,6 +416,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   const role = rootRule.role;
   const mode = role === "mode" ? rootRule.mode || seedRoot.domain : null;
   const affixParams = audioParamsForAffixes(ithkuil, family);
+  const visualAffixParams = visualParamsForAffixes(ithkuil, family);
   const effects = mergeEffects(
     FAMILY_EFFECTS[family],
     affixParams.effects,
@@ -330,6 +424,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   );
   const visualEffects = mergeVisualEffects(
     FAMILY_VISUAL_EFFECTS[family],
+    visualAffixParams.visualEffects,
     representation.ghost ? { glow: 0.18 } : null,
   );
   const baseParams = {
@@ -353,6 +448,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
     role,
     source: ithkuil.source,
     version: IKAL_PARAMS_VERSION,
+    visualAffixes: visualAffixParams.visualAffixes,
     visualEffects,
   };
   const resolved = resolveIkalParams(baseParams, userParams);
@@ -361,6 +457,8 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
     baseParams,
     diagnostics: [
       ...affixParams.diagnostics,
+      ...visualAffixParams.diagnostics,
+      ...unknownAffixDiagnostics(ithkuil),
       ...resolved.diagnostics,
     ],
     params: resolved.params,

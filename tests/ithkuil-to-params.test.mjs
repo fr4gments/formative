@@ -117,6 +117,39 @@ assert.equal(sparkScatter.family, "spark-scatter");
 assert.equal(sparkScatter.lexical.stem, 2);
 assert.equal(sparkScatter.visualEffects.fracture > 0.5, true);
 
+const scaledFilament = paramsForForm("avtalöxa");
+assert.equal(scaledFilament.family, "filament");
+assert.equal(scaledFilament.visualAffixes.scale, 6);
+assert.equal(scaledFilament.visualEffects.scale, 0.6);
+
+const vividCloud = paramsForForm("ufthalölba");
+assert.equal(vividCloud.family, "cloud");
+assert.equal(vividCloud.visualAffixes.colorDimension, 6);
+assert.equal(vividCloud.visualEffects.chroma > cloud.visualEffects.chroma, true);
+
+const glowingTrace = paramsForForm("amzmaläňva");
+assert.equal(glowingTrace.family, "trace");
+assert.equal(glowingTrace.visualAffixes.colorAttribute, 2);
+assert.equal(glowingTrace.visualEffects.glow > trace.visualEffects.glow, true);
+
+const scaledGlowSpark = paramsForForm("etçvalöxäňva");
+assert.equal(scaledGlowSpark.family, "spark-scatter");
+assert.equal(scaledGlowSpark.visualEffects.scale, 0.6);
+assert.equal(scaledGlowSpark.visualEffects.glow > sparkScatter.visualEffects.glow, true);
+
+const denseFilament = paramsForForm("avtalexva");
+assert.equal(denseFilament.visualAffixes.concentration, 3);
+assert.equal(denseFilament.visualEffects.density > filament.visualEffects.density, true);
+
+const organizedFilament = paramsForForm("avtalävha");
+assert.equal(organizedFilament.visualAffixes.organization, 2);
+assert.equal(organizedFilament.visualEffects.turbulence > filament.visualEffects.turbulence, true);
+
+const brokenFilament = paramsForForm("avtaläňfa");
+assert.equal(brokenFilament.visualAffixes.transition, 2);
+assert.equal(brokenFilament.visualEffects.fracture > filament.visualEffects.fracture, true);
+assert.equal(brokenFilament.visualEffects.transitionGlitch > 0, true);
+
 const musicMode = paramsForForm("alkala");
 assert.equal(musicMode.role, "mode");
 assert.equal(musicMode.mode, "music");
@@ -187,6 +220,40 @@ const slotVAudioAffixResult = paramsForIthkuilWord({
 assert.ok(slotVAudioAffixResult.params);
 assert.equal(slotVAudioAffixResult.params.audioEffects.intensity, 0);
 assert.equal(slotVAudioAffixResult.diagnostics[0].code, "unsupported-audio-affix-slot");
+
+const visualOnAudio = {
+  ...parseIthkuilWord("ļtala").ithkuil,
+  affixes: { slotV: [], slotVII: [{ cs: "x", degree: 6, type: 1 }] },
+};
+const visualOnAudioResult = paramsForIthkuilWord({
+  ithkuil: visualOnAudio,
+  seedRoot: seedRootForIthkuil(visualOnAudio),
+});
+assert.ok(visualOnAudioResult.params);
+assert.equal(visualOnAudioResult.diagnostics.some((item) => item.code === "incompatible-visual-effect"), true);
+
+const audioOnVisual = {
+  ...parseIthkuilWord("avtala").ithkuil,
+  affixes: { slotV: [], slotVII: [{ cs: "ţm", degree: 7, type: 1 }] },
+};
+const audioOnVisualResult = paramsForIthkuilWord({
+  ithkuil: audioOnVisual,
+  seedRoot: seedRootForIthkuil(audioOnVisual),
+});
+assert.ok(audioOnVisualResult.params);
+assert.equal(audioOnVisualResult.diagnostics.some((item) => item.code === "incompatible-audio-effect"), true);
+
+const visualSlotV = {
+  ...parseIthkuilWord("avtala").ithkuil,
+  affixes: { slotV: [{ cs: "x", degree: 6, type: 1 }], slotVII: [] },
+};
+const visualSlotVResult = paramsForIthkuilWord({
+  ithkuil: visualSlotV,
+  seedRoot: seedRootForIthkuil(visualSlotV),
+});
+assert.ok(visualSlotVResult.params);
+assert.equal(visualSlotVResult.params.visualEffects.scale, 0);
+assert.equal(visualSlotVResult.diagnostics.some((item) => item.code === "unsupported-visual-affix-slot"), true);
 
 const base = paramsForForm("alxružla");
 const resolved = resolveIkalParams(base, {

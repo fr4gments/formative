@@ -10,6 +10,7 @@ nav:
       - Migration POC: migration-poc.md
       - Paramètres artistiques: params.md
       - Effets audio: effets-audio.md
+      - Effets visuels: effets-visuels.md
       - Notes techniques: langage.md
 theme:
   name: material
