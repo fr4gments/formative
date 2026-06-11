@@ -1,4 +1,5 @@
 import { OPERATOR_FOR_AFFILIATION } from "../parser/ikal-affiliations.js";
+import { createCanvasAsciiRenderer } from "./canvas-ascii.js";
 import { legacyProgramView } from "./program-view.js";
 
 // Moteur visuel unifié en champs (Étape 5.6).
@@ -274,7 +275,14 @@ function fieldForFamily(family) {
 // (affrala distortion, sčala break-apart) tordent toute la ligne.
 // ---------------------------------------------------------------------------
 
-function warpAndGlitch(p, amountWarp, amountGlitch, seed, t, ctx) {
+// Objets réutilisés par la boucle chaude : un rendu = des centaines de
+// milliers d'évaluations par seconde, allouer un objet par cellule nourrit le
+// ramasse-miettes et fait saccader toute la page (interface comprise).
+const LAYER_POINT = { x: 0, y: 0 };
+const WORD_POINT = { x: 0, y: 0 };
+const COLOR_OUT = [0, 0, 0];
+
+function warpInto(out, p, amountWarp, amountGlitch, seed, t, ctx) {
   let x = p.x;
   let y = p.y;
 
@@ -292,7 +300,9 @@ function warpAndGlitch(p, amountWarp, amountGlitch, seed, t, ctx) {
     y += (fbm(x * 2.6 + 7.3, y * 2.6, seed + 22) - 0.5) * 0.62 * amountWarp;
   }
 
-  return { x, y };
+  out.x = x;
+  out.y = y;
+  return out;
 }
 
 function wordWarp(controls) {
@@ -310,15 +320,20 @@ function evalWord(word, p, t, ctx) {
   const glitch = wordGlitch(controls);
 
   if (warp > 0 || glitch > 0) {
-    q = warpAndGlitch(q, warp, glitch, word.seed, t, ctx);
+    q = warpInto(WORD_POINT, q, warp, glitch, word.seed, t, ctx);
   }
 
   if (controls.scale > 0) {
     const zoom = 1 / (1 + 1.3 * controls.scale);
-    q = {
-      x: ctx.center.x + (q.x - ctx.center.x) * zoom,
-      y: ctx.center.y + (q.y - ctx.center.y) * zoom,
-    };
+
+    if (q !== WORD_POINT) {
+      WORD_POINT.x = q.x;
+      WORD_POINT.y = q.y;
+      q = WORD_POINT;
+    }
+
+    q.x = ctx.center.x + (q.x - ctx.center.x) * zoom;
+    q.y = ctx.center.y + (q.y - ctx.center.y) * zoom;
   }
 
   const speed = 0.35 + controls.motion * 1.4;
@@ -373,6 +388,7 @@ function compileLayer(layer) {
   }
 
   return {
+    animationPool: visibleAnimationWords(words),
     displacers: matter.filter((word) => word.operator === "conflictuel"),
     effects,
     glitch: clamp01(glitch),
@@ -407,7 +423,7 @@ function evalStillLayer(compiled, p, t, ctx) {
   let q = p;
 
   if (compiled.warp > 0 || compiled.glitch > 0) {
-    q = warpAndGlitch(q, compiled.warp, compiled.glitch, compiled.seed, t, ctx);
+    q = warpInto(LAYER_POINT, p, compiled.warp, compiled.glitch, compiled.seed, t, ctx);
   }
 
   const values = [];
@@ -460,25 +476,27 @@ function evalStillLayer(compiled, p, t, ctx) {
 
 // Ligne lyula: : la séquence avance d'un mot de matière par pas de temps ;
 // les mots glitch de la ligne déforment chaque pas sans en occuper un.
-function evalAnimationLayer(compiled, p, t, ctx) {
-  const pool = visibleAnimationWords(compiled.words);
+// Le mot actif est choisi une fois par frame, pas une fois par cellule.
+function activeAnimationWord(compiled, t) {
+  const pool = compiled.animationPool;
 
   if (pool.length === 0) {
-    return { intensity: 0, values: [] };
+    return null;
   }
 
-  const word = pool[Math.floor(Math.max(0, t) / STEP_SECONDS) % pool.length];
+  return pool[Math.floor(Math.max(0, t) / STEP_SECONDS) % pool.length];
+}
+
+function evalAnimationWord(compiled, word, p, t, ctx) {
   let q = p;
 
   if (compiled.warp > 0 || compiled.glitch > 0) {
-    q = warpAndGlitch(q, compiled.warp, compiled.glitch, compiled.seed, t, ctx);
+    q = warpInto(LAYER_POINT, p, compiled.warp, compiled.glitch, compiled.seed, t, ctx);
   }
 
-  const value = word.isEffect
+  return word.isEffect
     ? clamp01(nebula(q, t * 3, word) * 0.8)
     : evalWord(word, q, t, ctx);
-
-  return { intensity: value, values: [{ value, word }] };
 }
 
 // ---------------------------------------------------------------------------
@@ -489,7 +507,7 @@ function mixChannel(a, b, t) {
   return a + (b - a) * t;
 }
 
-function wordColor(word, value) {
+function wordColor(word, value, out) {
   const controls = word.controls;
   const palette = word.palette;
   const shifted = clamp01(value + controls.colorShift * 0.25 * Math.sin(value * 9 + word.seed));
@@ -520,29 +538,38 @@ function wordColor(word, value) {
 
   const dark = 1 - clamp01(controls.darkness) * 0.5 - clamp01(controls.ghost) * 0.3;
 
-  return [
-    Math.round(Math.max(0, Math.min(255, r * dark))),
-    Math.round(Math.max(0, Math.min(255, g * dark))),
-    Math.round(Math.max(0, Math.min(255, b * dark))),
-  ];
+  out[0] = Math.round(Math.max(0, Math.min(255, r * dark)));
+  out[1] = Math.round(Math.max(0, Math.min(255, g * dark)));
+  out[2] = Math.round(Math.max(0, Math.min(255, b * dark)));
+  return out;
 }
 
 // ---------------------------------------------------------------------------
 // Rendu d'une frame.
 // ---------------------------------------------------------------------------
 
-export function renderFieldFrame({ layers = [], cols = 110, rows = 50, t = 0, mode = "image" } = {}) {
+// `into` : une frame du même format (mêmes cols/rows) à réutiliser — la boucle
+// d'animation repasse la frame précédente pour ne rien réallouer entre frames.
+export function renderFieldFrame({ layers = [], cols = 110, rows = 50, t = 0, mode = "image", into = null } = {}) {
   const cleanLayers = layers.filter((layer) => (layer?.sequence || []).length);
   const compiled = cleanLayers.map(compileLayer);
+  const activeWords = mode === "animation"
+    ? compiled.map((layer) => activeAnimationWord(layer, t))
+    : null;
   const aspectY = (rows * 2) / cols;
   const ctx = { aspectY, center: { x: 0.5, y: aspectY / 2 } };
-  const cells = [];
+  const frame = into && into.cols === cols && into.rows === rows
+    ? into
+    : { cells: emptyCells(cols, rows), cols, rows };
+  const cells = frame.cells;
+  const p = { x: 0, y: 0 };
 
   for (let row = 0; row < rows; row++) {
-    const line = [];
+    const line = cells[row];
+    p.y = ((row + 0.5) / rows) * aspectY;
 
     for (let col = 0; col < cols; col++) {
-      const p = { x: (col + 0.5) / cols, y: ((row + 0.5) / rows) * aspectY };
+      p.x = (col + 0.5) / cols;
       let best = 0;
       let red = 0;
       let green = 0;
@@ -550,9 +577,30 @@ export function renderFieldFrame({ layers = [], cols = 110, rows = 50, t = 0, mo
       let weightTotal = 0;
 
       for (let i = 0; i < compiled.length; i++) {
-        const { intensity, values } = mode === "animation"
-          ? evalAnimationLayer(compiled[i], p, t, ctx)
-          : evalStillLayer(compiled[i], p, t, ctx);
+        if (activeWords) {
+          const word = activeWords[i];
+
+          if (!word) {
+            continue;
+          }
+
+          const value = evalAnimationWord(compiled[i], word, p, t, ctx);
+          best = Math.max(best, value);
+          const weight = value * value;
+
+          if (weight <= 0.0001) {
+            continue;
+          }
+
+          const color = wordColor(word, value, COLOR_OUT);
+          red += color[0] * weight;
+          green += color[1] * weight;
+          blue += color[2] * weight;
+          weightTotal += weight;
+          continue;
+        }
+
+        const { intensity, values } = evalStillLayer(compiled[i], p, t, ctx);
         best = Math.max(best, intensity);
 
         for (const { value, word } of values) {
@@ -562,7 +610,7 @@ export function renderFieldFrame({ layers = [], cols = 110, rows = 50, t = 0, mo
             continue;
           }
 
-          const color = wordColor(word, value);
+          const color = wordColor(word, value, COLOR_OUT);
           red += color[0] * weight;
           green += color[1] * weight;
           blue += color[2] * weight;
@@ -572,21 +620,38 @@ export function renderFieldFrame({ layers = [], cols = 110, rows = 50, t = 0, mo
 
       const dither = (hash2(col, row, 7) - 0.5) * 0.05;
       const level = clamp01(best + dither * best);
-      const ch = RAMP[Math.min(RAMP.length - 1, Math.floor(level * RAMP.length))];
-      const color = weightTotal > 0
-        ? [
-            Math.round(red / weightTotal),
-            Math.round(green / weightTotal),
-            Math.round(blue / weightTotal),
-          ]
-        : [10, 12, 14];
-      line.push({ ch, color });
+      const cell = line[col];
+      cell.ch = RAMP[Math.min(RAMP.length - 1, Math.floor(level * RAMP.length))];
+
+      if (weightTotal > 0) {
+        cell.color[0] = Math.round(red / weightTotal);
+        cell.color[1] = Math.round(green / weightTotal);
+        cell.color[2] = Math.round(blue / weightTotal);
+      } else {
+        cell.color[0] = 10;
+        cell.color[1] = 12;
+        cell.color[2] = 14;
+      }
+    }
+  }
+
+  return frame;
+}
+
+function emptyCells(cols, rows) {
+  const cells = [];
+
+  for (let row = 0; row < rows; row++) {
+    const line = [];
+
+    for (let col = 0; col < cols; col++) {
+      line.push({ ch: " ", color: [10, 12, 14] });
     }
 
     cells.push(line);
   }
 
-  return { cells, cols, rows };
+  return cells;
 }
 
 function quantize(channel) {
@@ -637,23 +702,48 @@ export function frameToText(frame) {
 
 // ---------------------------------------------------------------------------
 // Consommateur DOM : image fixe = une frame figée, animation = boucle.
+// Le dessin passe par le canvas (canvas-ascii.js) : réécrire le HTML du <pre>
+// à chaque frame recréait des milliers de nœuds DOM par seconde (mémoire qui
+// gonfle, pauses GC, interface qui rame). Le <pre> #screen reste l'écran de
+// repos / POC ; la classe field-mode le masque pendant qu'un canvas IKAL joue.
 // ---------------------------------------------------------------------------
 
-export function createFieldVisual({ screen, win = globalThis.window } = {}) {
+export function createFieldVisual({
+  screen,
+  canvas,
+  win = globalThis.window,
+  createRenderer = createCanvasAsciiRenderer,
+} = {}) {
+  const renderer = canvas ? createRenderer({ canvas }) : null;
   let rafHandle = null;
   let startedAt = 0;
+  let frame = null;
 
   function enterFieldMode() {
     screen.classList?.add("field-mode");
+
+    if (canvas) {
+      canvas.hidden = false;
+    }
   }
 
   function leaveFieldMode() {
     screen.classList?.remove("field-mode");
+
+    if (canvas) {
+      canvas.hidden = true;
+    }
   }
 
   function renderInto({ cols, rows, layers, t, mode }) {
-    const frame = renderFieldFrame({ cols, layers, mode, rows, t });
-    screen.innerHTML = frameToHtml(frame);
+    frame = renderFieldFrame({ cols, into: frame, layers, mode, rows, t });
+
+    if (renderer) {
+      renderer.draw(frame, { t });
+    } else {
+      screen.innerHTML = frameToHtml(frame);
+    }
+
     return frame;
   }
 
@@ -683,7 +773,9 @@ export function createFieldVisual({ screen, win = globalThis.window } = {}) {
         startedAt = now;
       }
 
-      if (now - lastDrawn < 33) {
+      // Seuil à 31 ms, pas 33 : à 60 Hz les ticks tombent toutes les 16,7 ms,
+      // un seuil de 33 ms rate un tick sur deux et alterne 33/50 ms (saccade).
+      if (now - lastDrawn < 31) {
         return;
       }
 
@@ -697,7 +789,11 @@ export function createFieldVisual({ screen, win = globalThis.window } = {}) {
   function clear() {
     stop();
     leaveFieldMode();
-    screen.innerHTML = "";
+    renderer?.clear();
+
+    if (!renderer) {
+      screen.innerHTML = "";
+    }
   }
 
   return {

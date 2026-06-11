@@ -73,7 +73,8 @@ Depuis juin 2026, le rendu visuel suit le modele en champs (`src/engines/field-v
 - une **primitive** est un champ : une fonction `(x, y, temps) -> intensite` qui dit ou il y a de la matiere ;
 - un **affixe visuel** est une **transformation** de ce champ ou de sa couleur, jamais un ajout de matiere : `SIZ` dilate les coordonnees, `DSG` les tord, `VTS` les fracture en bandes, `CLD` et `COL` ne touchent que la traduction couleur ;
 - les mots **glitch** (`affrala` distorsion, `sčala` break-apart) ne dessinent rien : ils transforment toute la ligne ;
-- l'**image fixe** (`lyala:`) est une frame figee de ce calcul ; l'**animation** (`lyula:`) est le meme calcul avec le temps qui s'ecoule, la sequence d'une ligne avancant d'un mot par pas.
+- l'**image fixe** (`lyala:`) est une frame figee de ce calcul ; l'**animation** (`lyula:`) est le meme calcul avec le temps qui s'ecoule, la sequence d'une ligne avancant d'un mot par pas ;
+- les glyphes sont **dessines dans un canvas** (`src/engines/canvas-ascii.js`) : toujours du texte ASCII, mais l'aberration chromatique et les dechirures sont composees au dessin au lieu d'effets CSS par glyphe — reecrire le HTML a chaque frame saturait la memoire et faisait ramer l'interface. Le `<pre>` ne sert plus qu'a l'ecran de repos / POC. Banc de comparaison : `prototypes/render-canvas.html`.
 
 Deux mots d'une meme ligne `lyala:` ne s'additionnent pas : ils se **conjuguent**. L'operateur de conjugaison est porte par l'**Affiliation** Ithkuil du mot (categorie du bloc Ca, verifiee sur la grammaire officielle, chapitre 3) :
 

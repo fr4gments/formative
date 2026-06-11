@@ -75,6 +75,7 @@
   <label><input type="radio" name="mode" value="pre"> pre seul</label>
   <label><input type="radio" name="mode" value="canvas"> canvas seul</label>
   <label><input type="checkbox" id="glitch"> + déchirures canvas</label>
+  <label><input type="checkbox" id="fast"> 60 fps</label>
   <span id="stats">…</span>
 </div>
 
@@ -101,7 +102,7 @@
 <script type="module">
 import { renderFieldFrame, frameToHtml } from "../src/engines/field-visual.js";
 import { parseIkalProgram } from "../src/parser/ikal-parser.js";
-import { createCanvasAsciiRenderer, measureCell } from "./render-canvas.js";
+import { createCanvasAsciiRenderer, measureCell } from "../src/engines/canvas-ascii.js";
 
 const preScreen = document.getElementById("pre-screen");
 const canvasScreen = document.getElementById("canvas-screen");
@@ -111,6 +112,7 @@ const statsOut = document.getElementById("stats");
 const errorOut = document.getElementById("error");
 const cmd = document.getElementById("cmd");
 const glitchBox = document.getElementById("glitch");
+const fastBox = document.getElementById("fast");
 
 const renderer = createCanvasAsciiRenderer({ canvas: canvasScreen });
 const cell = measureCell();
@@ -120,14 +122,17 @@ let layersMode = "animation";
 let mode = "both";
 let startedAt = 0;
 let lastDrawn = -1;
+let frame = null;
+let grid = { cols: 80, rows: 40 };
 const perf = { count: 0, fields: 0, pre: 0, canvas: 0, since: 0 };
 
-function gridSize() {
+// Mesurée hors boucle : lire clientWidth à chaque frame force un re-layout.
+function measureGrid() {
   const pane = mode === "pre" ? panePre : paneCanvas;
   const width = pane.clientWidth || window.innerWidth / 2;
   const height = pane.clientHeight || window.innerHeight;
 
-  return {
+  grid = {
     cols: Math.min(220, Math.max(20, Math.floor(width / cell.width))),
     rows: Math.min(90, Math.max(12, Math.floor(height / cell.height))),
   };
@@ -153,6 +158,7 @@ function setMode(next) {
   mode = next;
   panePre.hidden = mode === "canvas";
   paneCanvas.hidden = mode === "pre";
+  measureGrid();
 }
 
 function tick(now) {
@@ -162,16 +168,18 @@ function tick(now) {
     startedAt = now;
   }
 
-  if (now - lastDrawn < 33 || layers.length === 0) {
+  // 31 ms et pas 33 : à 60 Hz un seuil de 33 ms rate un tick sur deux et
+  // alterne 33/50 ms (saccade). 60 fps = dessiner à chaque tick.
+  if (now - lastDrawn < (fastBox.checked ? 0 : 31) || layers.length === 0) {
     return;
   }
 
   lastDrawn = now;
   const t = layersMode === "animation" ? (now - startedAt) / 1000 : 0;
-  const { cols, rows } = gridSize();
+  const { cols, rows } = grid;
 
   const a = performance.now();
-  const frame = renderFieldFrame({ cols, layers, mode: layersMode, rows, t });
+  frame = renderFieldFrame({ cols, into: frame, layers, mode: layersMode, rows, t });
   const b = performance.now();
 
   if (mode !== "canvas") {
@@ -219,7 +227,9 @@ cmd.addEventListener("keydown", (event) => {
     run();
   }
 });
+window.addEventListener("resize", measureGrid);
 
+measureGrid();
 run();
 requestAnimationFrame(tick);
 </script>

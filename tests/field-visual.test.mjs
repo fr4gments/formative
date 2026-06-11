@@ -141,7 +141,18 @@ assert.equal(frameToText(frozenMotion), frameToText(renderFieldFrame({ ...SIZE, 
 const empty = renderFieldFrame({ ...SIZE, layers: [], mode: "image" });
 assert.equal(inkOf(empty), 0);
 
+// Réutiliser le tampon de frame (option into) donne la même image, sans
+// réallouer : c'est ce que fait la boucle d'animation entre deux frames.
+const reusable = renderFieldFrame({ ...SIZE, layers: layersA, mode: "image", t: 0 });
+const reused = renderFieldFrame({ ...SIZE, into: reusable, layers: imageLayersFor("lyala:\n  trala"), mode: "image", t: 0 });
+assert.equal(reused, reusable, "into doit rendre dans la même frame");
+assert.equal(
+  frameToText(reused),
+  frameToText(renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  trala"), mode: "image", t: 0 })),
+);
+
 // Consommateur DOM minimal : still + clear basculent la classe field-mode.
+// Sans canvas fourni, repli sur l'injection HTML dans le <pre>.
 const classes = new Set();
 const screen = {
   innerHTML: "",
@@ -157,5 +168,27 @@ assert.ok(screen.innerHTML.includes("<span"));
 visual.clear();
 assert.ok(!classes.has("field-mode"));
 assert.equal(screen.innerHTML, "");
+
+// Avec un canvas : le dessin passe par le renderer, le canvas s'affiche en
+// mode champs et se cache au clear, le <pre> n'est plus réécrit.
+const rendererCalls = [];
+const fakeCanvas = { hidden: true };
+const canvasVisual = createFieldVisual({
+  canvas: fakeCanvas,
+  createRenderer: () => ({
+    clear: () => rendererCalls.push("clear"),
+    draw: (frame) => rendererCalls.push("draw " + frame.cols + "x" + frame.rows),
+  }),
+  screen,
+  win: { cancelAnimationFrame: () => {} },
+});
+canvasVisual.drawStill({ cols: 24, rows: 10, layers: layersA });
+assert.ok(classes.has("field-mode"));
+assert.equal(fakeCanvas.hidden, false);
+assert.equal(screen.innerHTML, "");
+canvasVisual.clear();
+assert.ok(!classes.has("field-mode"));
+assert.equal(fakeCanvas.hidden, true);
+assert.deepEqual(rendererCalls, ["draw 24x10", "clear"]);
 
 console.log("field-visual ok");

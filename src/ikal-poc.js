@@ -7,6 +7,7 @@ import { parseIkalProgram } from "./parser/ikal-parser.js";
 export function createIkalPocApp({
   autocompletePanel,
   cmd,
+  fieldCanvas,
   readout,
   runButton,
   screen,
@@ -26,7 +27,7 @@ export function createIkalPocApp({
     getProgram: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame)[0] || null,
     getPrograms: (frame = 0) => animationProgramsForLayers(activeAnimationLayers, frame),
   });
-  const visual = createVisual({ screen });
+  const visual = createVisual({ canvas: fieldCanvas, screen });
   const autocomplete = createAutocomplete({
     panel: autocompletePanel,
     textarea: cmd,
@@ -285,6 +286,7 @@ export function startIkalPocApp(doc = document) {
   const app = createIkalPocApp({
     autocompletePanel: doc.getElementById("suggestions"),
     cmd: doc.getElementById("cmd"),
+    fieldCanvas: doc.getElementById("field-screen"),
     readout: doc.getElementById("readout"),
     runButton: doc.getElementById("run"),
     screen: doc.getElementById("screen"),

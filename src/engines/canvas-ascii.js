@@ -1,12 +1,15 @@
-// Prototype Étape 5.6+ — rendu canvas du moteur en champs.
+// Rendu canvas du moteur en champs (validé via prototypes/render-canvas.html).
 //
-// Mêmes glyphes ASCII, même frame que le rendu <pre>, mais DESSINÉS :
+// Mêmes glyphes ASCII que le rendu <pre>, mais DESSINÉS :
 // - les glyphes colorés vont dans un canvas hors écran (une passe de texte) ;
 // - l'aberration chromatique = deux silhouettes teintées rose / cyan décalées
-//   de ±0.7px, composées par-dessus (équivalent du text-shadow CSS actuel,
-//   mais payé en copies d'image GPU, pas en peinture par glyphe) ;
-// - le saturate(1.3) contrast(1.12) du CSS est appliqué aux couleurs des runs
-//   au moment du dessin : même teinte finale, zéro filtre par frame.
+//   de ±0.7px, composées par-dessus (équivalent de l'ancien text-shadow CSS,
+//   mais payé en copies d'image, pas en peinture par glyphe) ;
+// - le saturate(1.3) contrast(1.12) de l'ancien CSS est appliqué aux couleurs
+//   des runs au moment du dessin : même teinte finale, zéro filtre par frame.
+//
+// Pourquoi : réécrire le HTML du <pre> à chaque frame recréait des milliers de
+// nœuds DOM par seconde (mémoire qui gonfle, pauses GC, interface qui rame).
 
 const FONT_STACK = '"DejaVu Sans Mono", "Menlo", "Consolas", monospace';
 const ABERRATION_PINK = "rgba(255,47,179,0.34)";
@@ -151,7 +154,7 @@ export function createCanvasAsciiRenderer({ canvas, fontSize = 15 }) {
   }
 
   // Déchirures horizontales optionnelles : des bandes de la passe de texte
-  // copiées avec un décalage, stables ~0.4 s comme warpAndGlitch côté champs.
+  // copiées avec un décalage, stables ~0.4 s comme warpInto côté champs.
   function composeText(t, glitch) {
     const logicalW = cols * cell.width;
     const logicalH = rows * cell.height;
@@ -194,8 +197,14 @@ export function createCanvasAsciiRenderer({ canvas, fontSize = 15 }) {
     composeText(t, glitch);
   }
 
+  function clear() {
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
   return {
     cell,
+    clear,
     draw,
   };
 }
