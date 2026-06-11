@@ -61,7 +61,7 @@ lyala:
   avtalöxa ufthalölba amzmaläňva etçvalöxäňva
 ```
 
-Ces mots appartiennent au vocabulaire IKAL controle. Ils sont verifies par `@zsnout/ithkuil` dans les tests Node, puis reconnus dans le runtime navigateur par l'adaptateur IKAL avant d'etre traduits en `params` et envoyes aux moteurs via un pont temporaire compatible avec les moteurs POC.
+Ces mots appartiennent au vocabulaire IKAL controle. Depuis l'Etape 7 (grammaire ouverte), le runtime navigateur DECOMPOSE chaque forme tapee — racine, slots, affixes, degres, Affiliation — au lieu de la chercher dans une liste : toute combinaison des mots-cles connus est acceptee, meme jamais ecrite auparavant. La couche sens -> params traduit ensuite la decomposition pour les moteurs, avec des diagnostics lisibles quand une racine ou un affixe n'est pas encore mappe artistiquement.
 
 ## Saisie et completion
 
@@ -74,6 +74,10 @@ Ces approximations ne sont pas des alias du langage. Si elles sont lancees telle
 Pour les effets audio affixes, l'editeur propose aussi des formes generees depuis le nom d'affixe, l'effet ou le degre : `ity`, `opf`, `dts`, `dts9`, `degr`, `reverb`, etc. L'inspecteur affiche alors les affixes et degres, par exemple `ITY/7 intensity = 0.7`.
 
 Pour les effets visuels affixes dans `lyala:`, l'editeur propose aussi les formes generees depuis `siz`, `scale`, `cld`, `vivid`, `col`, `glow`, `dcp`, `density`, `dsg`, `chaos`, `vts`, `glitch`, etc. L'inspecteur affiche alors les affixes visuels et degres, par exemple `SIZ/6 scale`, `COL/2 luminescent-glowing` ou `DCP/3 concentrated-condensed`.
+
+La completion sait aussi COMPOSER une combinaison libre, au-dela des suggestions enumerees : on enchaine un mot de base et des alias d'effets (avec degre optionnel, `+` facultatif entre les morceaux), et l'editeur genere la forme canonique exacte. Exemples : `ltalaity3mdl2dts4` propose `ļtaleţmäjmimpa` (trois affixes audio a degres arbitraires) ; `filament+sculpte+scale7` ou `avtalacoasiz7` proposent `avtarļoxa` (filament + Affiliation COA + `SIZ/7` sur le meme mot).
+
+L'inspecteur decompose n'importe quelle forme valide — y compris une forme tapee a la main qui n'apparait dans aucune suggestion — et affiche sa lecture IKAL complete (affixes, degres, operateur de conjugaison).
 
 Dans un bloc de mode, la completion devient contextuelle :
 

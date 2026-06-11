@@ -114,12 +114,10 @@ lyala:
   avtala ufthaňa     # VAR : le nuage deforme les filaments (deplacement)
 ```
 
-Les formes sont generees par `@zsnout/ithkuil` puis commitees dans `src/parser/generated/ikal-affiliation-forms.js`.
-
-Commande de regeneration :
+Depuis l'Etape 7, ces formes sont decomposees par le runtime navigateur comme n'importe quelle autre : l'Affiliation est lue dans le bloc Ca de la forme tapee, et peut meme se combiner avec des affixes sur le meme mot (ex. `avtarļoxa` = filament + COA + `SIZ/7`, une forme qui n'existe dans aucune liste). La liste generee est devenue une fixture de test :
 
 ```bash
-npm run generate:affiliation-forms
+npm run generate:affiliation-forms   # regenere tests/fixtures/ikal-affiliation-forms.js
 ```
 
 ## Exemples
@@ -136,12 +134,10 @@ lyala:
   etçvalöxäňva   # eclats agrandis + glow : SIZ/6 + COL/2
 ```
 
-Les formes ci-dessus sont generees par `@zsnout/ithkuil` puis commitees dans `src/parser/generated/ikal-visual-affixed-forms.js`.
-
-Commande de regeneration :
+Depuis l'Etape 7, les formes affixees sont decomposees par le runtime navigateur : tout degre, toute combinaison d'affixes visuels connus est lue directement, sans liste. La liste generee est devenue une fixture de test :
 
 ```bash
-npm run generate:visual-affixes
+npm run generate:visual-affixes   # regenere tests/fixtures/ikal-visual-affixed-forms.js
 ```
 
 ## Completion

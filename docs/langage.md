@@ -11,7 +11,7 @@ Cette page conserve les notes techniques issues de l'implementation. La referenc
 
 ## Etape 2 - vraies formes Ithkuil
 
-IKAL s'appuie sur `@zsnout/ithkuil` dans l'outillage Node pour verifier et generer les formes romanisees New Ithkuil retenues. Le runtime navigateur ne charge pas directement cette librairie : il execute un vocabulaire IKAL controle, deja valide par les tests de conformite.
+IKAL s'appuie sur `@zsnout/ithkuil` comme reference morphologique. Depuis l'Etape 7, le runtime navigateur embarque un sous-ensemble extrait de cette bibliotheque (decomposition + generation, voir la section grammaire ouverte) ; l'outillage Node garde la bibliotheque complete pour les tests de conformite croisee.
 
 Le code IKAL ne reinvente pas la morphologie Ithkuil. Il limite volontairement la surface acceptee par l'application et ajoute une couche artistique au-dessus des formes retenues.
 
@@ -94,9 +94,22 @@ Voir [Effets audio](effets-audio.md) pour les affixes retenus `ITY`, `MDL`, `FRC
 
 La premiere tranche d'effets visuels applique les affixes New Ithkuil `SIZ`, `CLD`, `COL`, `DCP`, `DSG` et `VTS` aux primitives `lyala:`.
 
-Ces affixes sont generes par `scripts/generate-visual-affixed-forms.mjs` et reconnus via `src/parser/generated/ikal-visual-affixed-forms.js`, comme les affixes audio le sont pour le son.
+Comme les affixes audio, ils sont decomposes directement depuis la forme tapee (Etape 7) ; `scripts/generate-visual-affixed-forms.mjs` regenere la fixture de test correspondante.
 
 Voir [Effets visuels](effets-visuels.md) pour les decisions de mapping.
+
+## Etape 7 - grammaire ouverte
+
+C'est le jalon qui separe « un vocabulaire » d'« un langage » : une grammaire FIXE (racines + affixes + degres = les mots-cles, liste fermee) qui engendre un ensemble ILLIMITE de combinaisons, lues par decomposition plutot que cherchees dans une liste.
+
+Concretement :
+
+- `scripts/extract-ithkuil-runtime.mjs` (`npm run generate:ithkuil-runtime`) extrait de `@zsnout/ithkuil` le seul code utilise par `parseWord` (decomposition) et `wordToIthkuil` (generation), par tree-shaking esbuild, vers `src/parser/generated/ithkuil-runtime.js` (~119 Ko, un module ES autonome servi tel quel — zero build au runtime). Ni le lexique officiel ni les dependances de validation ne sont embarques.
+- `src/parser/ithkuil-adapter.js` decompose toute forme tapee : racine, stem, function, bloc Ca (dont l'Affiliation), affixes Slot V / VII avec degres. La couche sens -> params decide ensuite ce qu'IKAL sait en faire, avec les diagnostics existants (`unmapped-root`, `unsupported-affixes`, `too-many-audio-effects`, etc.) qui fonctionnent sur des formes jamais vues.
+- `src/parser/ikal-form-composer.js` compose les formes canoniques a la volee pour l'autocompletion (suggestions calculees depuis les regles, plus stockees) et permet la composition libre dans l'editeur.
+- Les anciens manifests sont devenus des fixtures de test (`tests/fixtures/`) : `tests/ikal-open-grammar.test.mjs` verifie que chaque forme enumeree se decompose vers la verite enregistree, que des combinaisons hors fixtures sont acceptees, et que le runtime extrait decompose chaque forme exactement comme la bibliotheque de reference cote Node.
+
+Consequence visible : l'Affiliation et les affixes se combinent desormais librement sur un meme mot (`avtarļoxa` = filament + COA + `SIZ/7`), et trois affixes audio a degres arbitraires (`ļtaleţmäjmimpa` = `ITY/3` + `MDL/2` + `DTS/4`) sont lus sans avoir jamais ete enumeres.
 
 ## Etape 5 - modes de couches
 

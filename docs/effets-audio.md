@@ -112,24 +112,15 @@ reverb = degree / 10
 
 Ce n'est pas "la racine reverb transformee en affixe". C'est une decision IKAL : `DTS` controle la traine reverberante du son.
 
-## Formes generees reconnues
+## Grammaire ouverte : decomposition des formes
 
-Le runtime navigateur ne charge pas encore directement `@zsnout/ithkuil`. Pour cette tranche, IKAL consomme donc un manifest genere en Node avec `@zsnout/ithkuil`, puis commite dans `src/parser/generated/ikal-audio-affixed-forms.js`.
+Depuis l'Etape 7, le runtime navigateur DECOMPOSE toute forme tapee : racine + slots + affixes + degres, via le sous-ensemble morphologique extrait de `@zsnout/ithkuil` (`src/parser/generated/ithkuil-runtime.js`, regenere par `npm run generate:ithkuil-runtime`). Plus aucune liste de formes pre-generees n'est consultee : n'importe quelle source sonore connue x n'importe quels affixes connus x n'importe quels degres est lue par decomposition, y compris une combinaison jamais ecrite auparavant.
 
-Le manifest couvre :
+La grammaire reste fermee — les mots-cles sont les racines `ļt`, `čxw`, `lxr`, `psw`, `bj`, les affixes `ITY`, `MDL`, `FRC`, `OPF`, `FLS`, `DTS` et les degres 1 a 9 — mais ses combinaisons sont illimitees. Les garde-fous restent des regles du langage : maximum 3 effets audio actifs, compatibilite par famille sonore, diagnostics lisibles meme sur des formes jamais vues.
 
-- toutes les sources sonores IKAL actuelles : `ļt`, `čxw`, `lxr`, `psw`, `bj` ;
-- chaque affixe audio seul, aux degres 1 a 9 ;
-- les combinaisons de 2 ou 3 affixes audio aux degres par defaut documentes ;
-- quelques formes de diagnostic generees pour tester les garde-fous.
+L'ancien manifest est devenu une fixture de test (`tests/fixtures/ikal-audio-affixed-forms.js`, regeneree par `npm run generate:audio-affixes`) : les tests verifient que chaque forme enumeree se decompose exactement vers la verite enregistree, et que le runtime extrait decompose comme la bibliotheque de reference.
 
-Commande de regeneration :
-
-```bash
-npm run generate:audio-affixes
-```
-
-L'editeur propose ces formes via l'autocompletion. L'inspecteur affiche la decomposition affixe/degre/valeur, par exemple `ITY/7 intensity = 0.7`.
+L'editeur propose ces formes via l'autocompletion, et sait composer a la volee une combinaison libre (voir [Syntaxe](syntaxe.md)). L'inspecteur affiche la decomposition affixe/degre/valeur, par exemple `ITY/7 intensity = 0.7`, pour n'importe quelle forme valide.
 
 | Forme | Lecture IKAL |
 | --- | --- |
