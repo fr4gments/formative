@@ -4,6 +4,7 @@ import {
   asciiFold,
   completionTokenAt,
   createIkalAutocomplete,
+  decompositionInspection,
   modeContextAt,
   replaceCompletionToken,
   suggestIkalWords,
@@ -152,6 +153,31 @@ assert.equal(
 );
 assert.equal(suggestIkalWords("uftharļa", { mode: "image" })[0].form, "uftharļa");
 
+// Composition libre : des combinaisons hors fenêtre énumérée sont composées à
+// la volée (grammaire ouverte), y compris affiliation + affixe sur le même mot.
+assert.equal(suggestIkalWords("ltalaity3mdl2dts4")[0].form, "ļtaleţmäjmimpa");
+assert.equal(
+  suggestIkalWords("ltalaity3mdl2dts4")[0].paramSignature,
+  "ITY/3 intensity = 0.3, MDL/2 random-modulation = 0.2, DTS/4 reverb = 0.4",
+);
+assert.equal(suggestIkalWords("avtalacoasiz7", { mode: "image" })[0].form, "avtarļoxa");
+assert.equal(suggestIkalWords("filament+sculpte+scale7", { mode: "image" })[0].form, "avtarļoxa");
+assert.equal(
+  suggestIkalWords("filament+sculpte+scale7", { mode: "image" })[0].paramSignature,
+  "COA coalescent · sculpte la ligne · SIZ/7 scale",
+);
+assert.equal(suggestIkalWords("avtalacoasiz7", { mode: "music" }).length, 0);
+
+// Inspection par décomposition : n'importe quelle forme valide, même jamais
+// énumérée, est décomposée et expliquée.
+assert.equal(decompositionInspection("avtarļoxa", "image").paramSignature, "COA coalescent · sculpte la ligne · SIZ/7 scale");
+assert.equal(
+  decompositionInspection("ļtaleţmäjmimpa", "music").paramSignature,
+  "ITY/3 intensity = 0.3, MDL/2 random-modulation = 0.2, DTS/4 reverb = 0.4",
+);
+assert.equal(decompositionInspection("avtarļoxa", "music"), null);
+assert.equal(decompositionInspection("wala", null), null);
+
 const replaced = replaceCompletionToken("acxw", completionTokenAt("acxw", 4), "ačxwuža");
 assert.equal(replaced.value, "ačxwuža ");
 assert.equal(replaced.caret, "ačxwuža ".length);
@@ -234,6 +260,15 @@ assert.equal(panel.hidden, false);
 assert.equal(panel.children[0].className, "suggestion inspector");
 assert.equal(panel.children[0].children[0].textContent, "ļtaloţmařčompa");
 assert.equal(panel.children[0].children[2].textContent, "ITY/7 intensity = 0.7, OPF/1 degradation = 0.9, DTS/7 reverb = 0.7");
+
+textarea.value = "ļtaleţmäjmimpa";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].className, "suggestion inspector");
+assert.equal(panel.children[0].children[0].textContent, "ļtaleţmäjmimpa");
+assert.equal(panel.children[0].children[2].textContent, "ITY/3 intensity = 0.3, MDL/2 random-modulation = 0.2, DTS/4 reverb = 0.4");
 
 textarea.value = "reverb";
 textarea.selectionStart = textarea.value.length;

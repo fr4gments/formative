@@ -1,5 +1,3 @@
-import { IKAL_GENERATED_AUDIO_AFFIX_FORMS } from "./generated/ikal-audio-affixed-forms.js";
-
 export const MAX_ACTIVE_AUDIO_EFFECTS = 3;
 
 export const DEFAULT_AUDIO_AFFIX_DEGREES = Object.freeze({
@@ -113,8 +111,6 @@ export const IKAL_AUDIO_AFFIXES = [
 ];
 
 const AUDIO_AFFIX_BY_KEY = new Map(IKAL_AUDIO_AFFIXES.map((affix) => [keyForAffix(affix), affix]));
-
-export const IKAL_AUDIO_AFFIX_FORMS = IKAL_GENERATED_AUDIO_AFFIX_FORMS;
 
 function keyForAffix(affix) {
   return String(affix.cs) + "/" + String(affix.type || 1);

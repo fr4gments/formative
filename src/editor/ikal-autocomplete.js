@@ -5,23 +5,36 @@ import {
 } from "../parser/ikal-mode-compatibility.js";
 import {
   DEFAULT_AUDIO_AFFIX_DEGREES,
-  IKAL_AUDIO_AFFIX_FORMS,
+  IKAL_AUDIO_AFFIXES,
+  audioAffixCompatibleWithFamily,
   audioAffixDefinitionFor,
   formatAudioAffixSignature,
 } from "../parser/ikal-audio-affixes.js";
 import {
   DEFAULT_VISUAL_AFFIX_DEGREES,
-  IKAL_VISUAL_AFFIX_FORMS,
+  IKAL_VISUAL_AFFIXES,
   formatVisualAffixSignature,
   labelForVisualAffixDegree,
+  visualAffixCompatibleWithFamily,
   visualAffixDefinitionFor,
 } from "../parser/ikal-visual-affixes.js";
 import {
-  IKAL_AFFILIATION_FORMS,
+  IKAL_MARKED_AFFILIATIONS,
   affiliationForCode,
   formatAffiliationSignature,
 } from "../parser/ikal-affiliations.js";
-import { formatParamSignatureForSeedRoot } from "../parser/ikal-param-signatures.js";
+import {
+  IKAL_MATTER_ROOTS,
+  composeIkalForm,
+  ikalAffiliationSuggestionForms,
+  ikalAudioSuggestionForms,
+  ikalVisualSuggestionForms,
+} from "../parser/ikal-form-composer.js";
+import {
+  formatParamSignatureForSeedRoot,
+  paramFamilyForSeedRoot,
+} from "../parser/ikal-param-signatures.js";
+import { analyzeIthkuilToken } from "../parser/ithkuil-program-parser.js";
 
 const TOKEN_DELIMITER = /[\s(),:]/;
 const NOOP_AUTOCOMPLETE = {
@@ -530,24 +543,282 @@ export function suggestIkalWords(query, {
     .map((root) => suggestionFromRoot(root, scoreRoot(root, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
-  const audioSuggestions = IKAL_AUDIO_AFFIX_FORMS
+  const audioSuggestions = ikalAudioSuggestionForms()
     .filter(isCompletableAudioForm)
     .map((form) => suggestionFromAudioForm(form, roots, scoreAudioForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
-  const visualSuggestions = IKAL_VISUAL_AFFIX_FORMS
+  const visualSuggestions = ikalVisualSuggestionForms()
     .filter(isCompletableVisualForm)
     .map((form) => suggestionFromVisualForm(form, roots, scoreVisualForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
-  const affiliationSuggestions = IKAL_AFFILIATION_FORMS
+  const affiliationSuggestions = ikalAffiliationSuggestionForms()
     .map((form) => suggestionFromAffiliationForm(form, roots, scoreAffiliationForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const compositionSuggestions = freeCompositionSuggestions(foldedQuery, roots)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const merged = [
+    ...rootSuggestions,
+    ...audioSuggestions,
+    ...visualSuggestions,
+    ...affiliationSuggestions,
+    ...compositionSuggestions,
+  ].sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form));
+  const seenForms = new Set();
+  const unique = [];
 
-  return [...rootSuggestions, ...audioSuggestions, ...visualSuggestions, ...affiliationSuggestions]
-    .sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form))
-    .slice(0, limit);
+  for (const suggestion of merged) {
+    if (seenForms.has(suggestion.form)) {
+      continue;
+    }
+
+    seenForms.add(suggestion.form);
+    unique.push(suggestion);
+  }
+
+  return unique.slice(0, limit);
+}
+
+// --- Composition libre : « base + alias d'effets (+ degré) » -> forme exacte ---
+// La fenêtre de suggestions énumérée couvre les affixes seuls et les combos par
+// défaut ; la composition libre couvre tout le reste (plusieurs affixes à
+// degrés arbitraires, affiliation + affixes), en générant la forme demandée.
+
+const MAX_COMPOSED_AFFIXES = 3;
+
+let affixSpecAliasCache = null;
+
+function affixSpecAliases() {
+  if (!affixSpecAliasCache) {
+    const entries = [];
+
+    for (const definition of IKAL_AUDIO_AFFIXES) {
+      for (const alias of new Set([definition.abbreviation, definition.id, definition.label])) {
+        entries.push({ alias: asciiFold(alias), definition, kind: "audio" });
+      }
+    }
+
+    for (const definition of IKAL_VISUAL_AFFIXES) {
+      const aliases = [definition.abbreviation, ...(definition.aliases || []), definition.id, definition.label];
+
+      for (const alias of new Set(aliases)) {
+        entries.push({ alias: asciiFold(alias), definition, kind: "visual" });
+      }
+    }
+
+    for (const entry of IKAL_MARKED_AFFILIATIONS) {
+      for (const alias of new Set([entry.code, ...(entry.aliases || [])])) {
+        if (!/\s/.test(alias)) {
+          entries.push({ affiliation: entry.code, alias: asciiFold(alias), kind: "affiliation" });
+        }
+      }
+    }
+
+    entries.sort((a, b) => b.alias.length - a.alias.length);
+    affixSpecAliasCache = entries;
+  }
+
+  return affixSpecAliasCache;
+}
+
+function defaultDegreeFor(entry) {
+  return entry.kind === "audio"
+    ? DEFAULT_AUDIO_AFFIX_DEGREES[entry.definition.abbreviation]
+    : DEFAULT_VISUAL_AFFIX_DEGREES[entry.definition.abbreviation];
+}
+
+function parseCompositionSpecs(rest, seed) {
+  const family = paramFamilyForSeedRoot(seed);
+  const allowed = {
+    affiliation: IKAL_MATTER_ROOTS.includes(seed.cr),
+    audio: audioAffixCompatibleWithFamily(null, family),
+    visual: visualAffixCompatibleWithFamily(null, family),
+  };
+  const specs = {
+    affiliation: null,
+    slotVIIAffixes: [],
+  };
+  let cursor = rest;
+
+  while (cursor) {
+    if (cursor.startsWith("+")) {
+      cursor = cursor.slice(1);
+
+      if (!cursor) {
+        return null;
+      }
+
+      continue;
+    }
+
+    const match = affixSpecAliases().find((entry) => {
+      if (!allowed[entry.kind] || !cursor.startsWith(entry.alias)) {
+        return false;
+      }
+
+      if (entry.kind === "affiliation") {
+        return !specs.affiliation;
+      }
+
+      return specs.slotVIIAffixes.length < MAX_COMPOSED_AFFIXES
+        && !specs.slotVIIAffixes.some((affix) => affix.cs === entry.definition.cs);
+    });
+
+    if (!match) {
+      return null;
+    }
+
+    cursor = cursor.slice(match.alias.length);
+
+    if (match.kind === "affiliation") {
+      specs.affiliation = match.affiliation;
+      continue;
+    }
+
+    let degree = defaultDegreeFor(match);
+
+    if (/^[1-9]/.test(cursor)) {
+      degree = Number(cursor[0]);
+      cursor = cursor.slice(1);
+    }
+
+    specs.slotVIIAffixes.push({
+      cs: match.definition.cs,
+      degree,
+      type: match.definition.type,
+    });
+  }
+
+  if (!specs.affiliation && specs.slotVIIAffixes.length === 0) {
+    return null;
+  }
+
+  return specs;
+}
+
+function compositionSignature(specs) {
+  const parts = [];
+
+  if (specs.affiliation) {
+    parts.push(formatAffiliationSignature(specs.affiliation));
+  }
+
+  const visualSignature = formatVisualAffixSignature(
+    specs.slotVIIAffixes.filter((affix) => visualAffixDefinitionFor(affix)),
+  );
+  const audioSignature = formatAudioAffixSignature(
+    specs.slotVIIAffixes.filter((affix) => audioAffixDefinitionFor(affix)),
+  );
+
+  if (visualSignature) {
+    parts.push(visualSignature);
+  }
+
+  if (audioSignature) {
+    parts.push(audioSignature);
+  }
+
+  return parts.join(" · ");
+}
+
+function freeCompositionSuggestions(foldedQuery, roots) {
+  const suggestions = [];
+
+  for (const seed of roots) {
+    const alias = aliasesForRoot(seed)
+      .filter((candidate) => foldedQuery.startsWith(candidate) && foldedQuery.length > candidate.length)
+      .sort((a, b) => b.length - a.length)[0];
+
+    if (!alias) {
+      continue;
+    }
+
+    const specs = parseCompositionSpecs(foldedQuery.slice(alias.length), seed);
+
+    if (!specs) {
+      continue;
+    }
+
+    let form;
+
+    try {
+      form = composeIkalForm(seed, specs);
+    } catch {
+      continue;
+    }
+
+    const signature = compositionSignature(specs);
+
+    suggestions.push({
+      compatibleModes: compatibleModesForSeedRoot(seed),
+      cr: seed.cr,
+      domain: seed.domain,
+      family: seed.family,
+      form,
+      migrationFrom: [],
+      paramSignature: signature,
+      score: 745,
+      sense: seed.sense + " + " + signature,
+    });
+  }
+
+  return suggestions;
+}
+
+// --- Inspection par décomposition : n'importe quelle forme valide, pas
+// seulement la fenêtre de suggestions. ---
+
+export function decompositionInspection(text, mode = null) {
+  const raw = (text || "").trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  let result;
+
+  try {
+    result = analyzeIthkuilToken(raw, 1);
+  } catch {
+    return null;
+  }
+
+  if (result.error || result.word.ithkuil.type !== "formative") {
+    return null;
+  }
+
+  const seed = result.word.seedRoot;
+
+  if (!seed) {
+    return null;
+  }
+
+  const compatibleModes = compatibleModesForSeedRoot(seed);
+
+  if (mode && !compatibleModes.includes(mode)) {
+    return null;
+  }
+
+  const ithkuil = result.word.ithkuil;
+  const affiliation = ithkuil.ca?.affiliation;
+  const signature = compositionSignature({
+    affiliation: affiliation && affiliation !== "CSL" ? affiliation : null,
+    slotVIIAffixes: ithkuil.affixes?.slotVII || [],
+  });
+
+  return {
+    compatibleModes,
+    cr: seed.cr,
+    domain: seed.domain,
+    family: seed.family,
+    form: raw,
+    migrationFrom: [],
+    paramSignature: signature || formatParamSignatureForSeedRoot(seed),
+    score: 0,
+    sense: signature ? seed.sense + " + " + signature : seed.sense,
+  };
 }
 
 function suggestionCompatibleWithMode(suggestion, mode) {
@@ -728,7 +999,8 @@ export function createIkalAutocomplete({
   function showInspectionForCaret(caret, mode = null) {
     const inspectionToken = inspectionTokenAt(textarea.value, caret);
     const inspection = suggestIkalWords(inspectionToken.text, { limit: 1, mode, roots })
-      .find((suggestion) => isCanonicalExactToken(inspectionToken, suggestion));
+      .find((suggestion) => isCanonicalExactToken(inspectionToken, suggestion))
+      || decompositionInspection(inspectionToken.text, mode);
 
     if (!inspection) {
       return false;
@@ -757,7 +1029,8 @@ export function createIkalAutocomplete({
 
     const previousToken = previousCompletionTokenBefore(value, gapStart);
     const inspection = suggestIkalWords(previousToken.text, { limit: 1, mode, roots })
-      .find((suggestion) => isCanonicalExactToken(previousToken, suggestion));
+      .find((suggestion) => isCanonicalExactToken(previousToken, suggestion))
+      || decompositionInspection(previousToken.text, mode);
 
     if (!inspection?.paramSignature) {
       return caret;
@@ -791,8 +1064,9 @@ export function createIkalAutocomplete({
     }
 
     const candidates = suggestIkalWords(token.text, { limit, mode: modeContext.mode, roots });
-    const exact = candidates.find((suggestion) => isCanonicalExactToken(token, suggestion));
     const suggestions = candidates.filter((suggestion) => !isCanonicalExactToken(token, suggestion));
+    const exact = candidates.find((suggestion) => isCanonicalExactToken(token, suggestion))
+      || (suggestions.length === 0 ? decompositionInspection(token.text, modeContext.mode) : null);
 
     if (exact) {
       state.open = false;

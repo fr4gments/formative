@@ -1,5 +1,3 @@
-import { IKAL_GENERATED_AFFILIATION_FORMS } from "./generated/ikal-affiliation-forms.js";
-
 // L'Affiliation Ithkuil (Slot VI, bloc Ca) dit comment les membres d'un
 // ensemble se relient entre eux. IKAL la lit comme l'opérateur de conjugaison
 // entre les mots d'une même ligne visuelle (vérifié sur ithkuil.net, chap. 3 ;
@@ -45,8 +43,6 @@ export const IKAL_MARKED_AFFILIATIONS = IKAL_AFFILIATIONS.filter((entry) => entr
 export const OPERATOR_FOR_AFFILIATION = Object.freeze(Object.fromEntries(
   IKAL_AFFILIATIONS.map((entry) => [entry.code, entry.operator]),
 ));
-
-export const IKAL_AFFILIATION_FORMS = IKAL_GENERATED_AFFILIATION_FORMS;
 
 export function affiliationForCode(code) {
   return IKAL_AFFILIATIONS.find((entry) => entry.code === code);

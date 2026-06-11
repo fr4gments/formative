@@ -1,5 +1,3 @@
-import { IKAL_GENERATED_VISUAL_AFFIX_FORMS } from "./generated/ikal-visual-affixed-forms.js";
-
 export const MAX_ACTIVE_VISUAL_EFFECTS = 3;
 
 export const DEFAULT_VISUAL_AFFIX_DEGREES = Object.freeze({
@@ -171,8 +169,6 @@ export const IKAL_VISUAL_AFFIXES = [
 ];
 
 const VISUAL_AFFIX_BY_KEY = new Map(IKAL_VISUAL_AFFIXES.map((affix) => [keyForAffix(affix), affix]));
-
-export const IKAL_VISUAL_AFFIX_FORMS = IKAL_GENERATED_VISUAL_AFFIX_FORMS;
 
 function keyForAffix(affix) {
   return String(affix.cs) + "/" + String(affix.type || 1);
