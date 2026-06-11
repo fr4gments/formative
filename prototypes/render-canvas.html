@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKAL — prototype rendu pre vs canvas</title>
+<style>
+  :root { --vert: #7CFC6A; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #050805; overflow: hidden; }
+  body {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, rgba(0,0,0,0) 1px 4px),
+      linear-gradient(135deg, #020405 0%, #050805 42%, #080509 100%);
+    font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
+    color: var(--vert);
+    display: flex; flex-direction: column;
+  }
+
+  #bar {
+    padding: 10px 14px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap;
+    border-bottom: 1px solid rgba(124,252,106,0.25); font-size: 13px;
+  }
+  #bar b { letter-spacing: 2px; }
+  #bar label { cursor: pointer; user-select: none; }
+  #stats { margin-left: auto; color: #8aa888; font-size: 12px; white-space: pre; }
+
+  #panes { flex: 1; display: flex; min-height: 0; }
+  .pane { flex: 1; min-width: 0; position: relative; overflow: hidden; }
+  .pane + .pane { border-left: 1px solid rgba(124,252,106,0.25); }
+  .pane .tag {
+    position: absolute; top: 6px; left: 10px; z-index: 2; font-size: 11px;
+    color: #6a826a; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .pane[hidden] { display: none; }
+
+  /* Réplique exacte du rendu actuel : #screen.field-mode dans index.html. */
+  #pre-screen {
+    position: absolute; inset: 0;
+    font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
+    font-size: 15px; line-height: 1; letter-spacing: 0;
+    white-space: pre; user-select: none; contain: content;
+    color: #b8c4c4;
+    text-shadow:
+      0.7px 0 0 rgba(255,47,179,0.34),
+      -0.7px 0 0 rgba(0,239,255,0.30);
+    filter: saturate(1.3) contrast(1.12);
+  }
+
+  #canvas-screen { position: absolute; top: 0; left: 0; }
+
+  #prompt {
+    display: flex; gap: 10px; align-items: center; padding: 10px 14px;
+    border-top: 1px solid rgba(124,252,106,0.25);
+  }
+  #prompt .chev { font-weight: bold; font-size: 16px; }
+  #cmd {
+    flex: 1; background: transparent; border: none; outline: none; resize: none;
+    color: var(--vert); font-family: inherit; font-size: 14px; line-height: 1.3;
+    height: 58px; caret-color: var(--vert);
+  }
+  #run {
+    background: transparent; color: var(--vert); font: inherit; cursor: pointer;
+    border: 1px solid rgba(124,252,106,0.45); padding: 6px 14px;
+  }
+  #run:hover { background: rgba(124,252,106,0.12); }
+  #error { color: #ff6b6b; font-size: 12px; padding: 0 14px 8px; min-height: 16px; }
+</style>
+</head>
+<body>
+
+<div id="bar">
+  <b>PRE vs CANVAS</b>
+  <label><input type="radio" name="mode" value="both" checked> les deux</label>
+  <label><input type="radio" name="mode" value="pre"> pre seul</label>
+  <label><input type="radio" name="mode" value="canvas"> canvas seul</label>
+  <label><input type="checkbox" id="glitch"> + déchirures canvas</label>
+  <span id="stats">…</span>
+</div>
+
+<div id="panes">
+  <div class="pane" id="pane-pre">
+    <span class="tag">pre + spans + css (rendu actuel)</span>
+    <pre id="pre-screen"></pre>
+  </div>
+  <div class="pane" id="pane-canvas">
+    <span class="tag">canvas</span>
+    <canvas id="canvas-screen"></canvas>
+  </div>
+</div>
+
+<div id="error"></div>
+<div id="prompt">
+  <span class="chev">&gt;_</span>
+  <textarea id="cmd" spellcheck="false">lyula:
+  trala glala
+  ufthala sčala</textarea>
+  <button id="run" type="button">lancer (Ctrl+Entrée)</button>
+</div>
+
+<script type="module">
+import { renderFieldFrame, frameToHtml } from "../src/engines/field-visual.js";
+import { parseIkalProgram } from "../src/parser/ikal-parser.js";
+import { createCanvasAsciiRenderer, measureCell } from "./render-canvas.js";
+
+const preScreen = document.getElementById("pre-screen");
+const canvasScreen = document.getElementById("canvas-screen");
+const panePre = document.getElementById("pane-pre");
+const paneCanvas = document.getElementById("pane-canvas");
+const statsOut = document.getElementById("stats");
+const errorOut = document.getElementById("error");
+const cmd = document.getElementById("cmd");
+const glitchBox = document.getElementById("glitch");
+
+const renderer = createCanvasAsciiRenderer({ canvas: canvasScreen });
+const cell = measureCell();
+
+let layers = [];
+let layersMode = "animation";
+let mode = "both";
+let startedAt = 0;
+let lastDrawn = -1;
+const perf = { count: 0, fields: 0, pre: 0, canvas: 0, since: 0 };
+
+function gridSize() {
+  const pane = mode === "pre" ? panePre : paneCanvas;
+  const width = pane.clientWidth || window.innerWidth / 2;
+  const height = pane.clientHeight || window.innerHeight;
+
+  return {
+    cols: Math.min(220, Math.max(20, Math.floor(width / cell.width))),
+    rows: Math.min(90, Math.max(12, Math.floor(height / cell.height))),
+  };
+}
+
+function run() {
+  const result = parseIkalProgram(cmd.value);
+
+  if (result.error || result.stop) {
+    errorOut.textContent = result.error || "programme vide";
+    return;
+  }
+
+  const animation = result.animationLayers || [];
+  const image = result.imageLayers || [];
+  layersMode = animation.length ? "animation" : "image";
+  layers = animation.length ? animation : image;
+  errorOut.textContent = layers.length ? "" : "aucune couche lyala: / lyula: dans le programme";
+  startedAt = 0;
+}
+
+function setMode(next) {
+  mode = next;
+  panePre.hidden = mode === "canvas";
+  paneCanvas.hidden = mode === "pre";
+}
+
+function tick(now) {
+  requestAnimationFrame(tick);
+
+  if (!startedAt) {
+    startedAt = now;
+  }
+
+  if (now - lastDrawn < 33 || layers.length === 0) {
+    return;
+  }
+
+  lastDrawn = now;
+  const t = layersMode === "animation" ? (now - startedAt) / 1000 : 0;
+  const { cols, rows } = gridSize();
+
+  const a = performance.now();
+  const frame = renderFieldFrame({ cols, layers, mode: layersMode, rows, t });
+  const b = performance.now();
+
+  if (mode !== "canvas") {
+    preScreen.innerHTML = frameToHtml(frame);
+  }
+
+  const c = performance.now();
+
+  if (mode !== "pre") {
+    renderer.draw(frame, { glitch: glitchBox.checked, t });
+  }
+
+  const d = performance.now();
+
+  perf.count++;
+  perf.fields += b - a;
+  perf.pre += c - b;
+  perf.canvas += d - c;
+
+  if (now - perf.since > 1000) {
+    const n = Math.max(1, perf.count);
+    const fps = perf.count * 1000 / (now - perf.since || 1);
+    statsOut.textContent =
+      cols + "×" + rows
+      + "  champs " + (perf.fields / n).toFixed(1) + "ms"
+      + "  pre " + (perf.pre / n).toFixed(1) + "ms"
+      + "  canvas " + (perf.canvas / n).toFixed(1) + "ms"
+      + "  " + fps.toFixed(0) + " fps";
+    perf.count = 0;
+    perf.fields = 0;
+    perf.pre = 0;
+    perf.canvas = 0;
+    perf.since = now;
+  }
+}
+
+for (const radio of document.querySelectorAll('input[name="mode"]')) {
+  radio.addEventListener("change", () => setMode(radio.value));
+}
+
+document.getElementById("run").addEventListener("click", run);
+cmd.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    run();
+  }
+});
+
+run();
+requestAnimationFrame(tick);
+</script>
+
+</body>
+</html>
