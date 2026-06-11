@@ -16,6 +16,11 @@ import {
   labelForVisualAffixDegree,
   visualAffixDefinitionFor,
 } from "../parser/ikal-visual-affixes.js";
+import {
+  IKAL_AFFILIATION_FORMS,
+  affiliationForCode,
+  formatAffiliationSignature,
+} from "../parser/ikal-affiliations.js";
 import { formatParamSignatureForSeedRoot } from "../parser/ikal-param-signatures.js";
 
 const TOKEN_DELIMITER = /[\s(),:]/;
@@ -26,6 +31,7 @@ const NOOP_AUTOCOMPLETE = {
 };
 const AUDIO_BASE_PRIORITY = ["ļtala", "ačxwuža", "alxrasa", "pswala", "abjala"];
 const VISUAL_BASE_PRIORITY = ["avtala", "ufthala", "amzmala", "etçvala", "allwala", "ftala", "špala", "fřala"];
+const AFFILIATION_BASE_PRIORITY = [...VISUAL_BASE_PRIORITY, "trala", "glala"];
 const MODE_HEADER = "mode";
 
 export function asciiFold(text) {
@@ -431,6 +437,80 @@ function suggestionFromVisualForm(form, roots, score) {
   };
 }
 
+function baseRootForAffiliationForm(form, roots) {
+  return roots.find((root) => root.form === form.baseForm);
+}
+
+function aliasesForAffiliationForm(form) {
+  const entry = affiliationForCode(form.affiliation);
+  const base = asciiFold(form.baseForm || "");
+  const code = form.affiliation.toLowerCase();
+
+  return [
+    asciiFold(form.form),
+    base + code,
+    base + "+" + code,
+    code,
+    ...(entry?.aliases || []).map(asciiFold),
+    asciiFold(entry?.label || ""),
+  ].filter(Boolean);
+}
+
+function scoreAffiliationForm(form, query) {
+  const foldedForm = asciiFold(form.form);
+  const aliases = aliasesForAffiliationForm(form);
+
+  if (form.form === query) {
+    return 970;
+  }
+
+  if (foldedForm === query) {
+    return 870;
+  }
+
+  if (aliases.includes(query)) {
+    return 740;
+  }
+
+  if (foldedForm.startsWith(query)) {
+    return 585 - foldedForm.length / 100;
+  }
+
+  if (aliases.some((alias) => alias.startsWith(query))) {
+    return 620;
+  }
+
+  if (foldedForm.includes(query)) {
+    return 400;
+  }
+
+  return 0;
+}
+
+function affiliationBaseRank(form) {
+  const index = AFFILIATION_BASE_PRIORITY.indexOf(form.baseForm);
+
+  return index >= 0 ? index : AFFILIATION_BASE_PRIORITY.length;
+}
+
+function suggestionFromAffiliationForm(form, roots, score) {
+  const baseRoot = baseRootForAffiliationForm(form, roots);
+  const signature = formatAffiliationSignature(form.affiliation);
+
+  return {
+    compatibleModes: baseRoot ? compatibleModesForSeedRoot(baseRoot) : ["image", "animation"],
+    cr: baseRoot?.cr || "",
+    domain: baseRoot?.domain || "visual",
+    family: baseRoot?.family || "affiliation",
+    form: form.form,
+    migrationFrom: [],
+    paramSignature: signature,
+    score,
+    sortRank: affiliationBaseRank(form),
+    sense: (baseRoot?.sense || "visual matter") + " + " + signature,
+  };
+}
+
 export function suggestIkalWords(query, {
   limit = 8,
   mode = null,
@@ -460,8 +540,12 @@ export function suggestIkalWords(query, {
     .map((form) => suggestionFromVisualForm(form, roots, scoreVisualForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const affiliationSuggestions = IKAL_AFFILIATION_FORMS
+    .map((form) => suggestionFromAffiliationForm(form, roots, scoreAffiliationForm(form, foldedQuery)))
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
 
-  return [...rootSuggestions, ...audioSuggestions, ...visualSuggestions]
+  return [...rootSuggestions, ...audioSuggestions, ...visualSuggestions, ...affiliationSuggestions]
     .sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form))
     .slice(0, limit);
 }

@@ -1,3 +1,4 @@
+import { affiliationForCode } from "./ikal-affiliations.js";
 import {
   MAX_ACTIVE_AUDIO_EFFECTS,
   audioAffixCompatibleWithFamily,
@@ -168,6 +169,17 @@ function multiplicityParams(ca = {}) {
   return {
     configuration,
     ...(CONFIGURATION_PARAMS[configuration] || fallback),
+  };
+}
+
+function conjugationParams(ca = {}) {
+  const affiliation = ca.affiliation || "CSL";
+  const entry = affiliationForCode(affiliation) || affiliationForCode("CSL");
+
+  return {
+    affiliation,
+    label: entry.label,
+    operator: entry.operator,
   };
 }
 
@@ -429,6 +441,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   );
   const baseParams = {
     audioEffects: affixParams.audioEffects,
+    conjugation: conjugationParams(ithkuil.ca),
     domain: seedRoot.domain,
     effects,
     family,

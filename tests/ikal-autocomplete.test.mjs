@@ -136,6 +136,22 @@ assert.equal(suggestIkalWords("affr", { mode: "music" })[0].form, "affrala");
 assert.equal(suggestIkalWords("affr", { mode: "image" })[0].form, "affrala");
 assert.equal(suggestIkalWords("affr", { mode: "animation" })[0].form, "affrala");
 
+assert.equal(suggestIkalWords("coa", { mode: "image" })[0].form, "avtarļa");
+assert.equal(suggestIkalWords("sculpte", { mode: "image" })[0].form, "avtarļa");
+assert.equal(suggestIkalWords("renforce", { mode: "image" })[0].form, "avtanļa");
+assert.equal(suggestIkalWords("deforme", { mode: "image" })[0].form, "avtaňa");
+assert.equal(suggestIkalWords("aso", { mode: "animation" })[0].form, "avtanļa");
+assert.equal(suggestIkalWords("coa", { mode: "music" }).length, 0);
+assert.equal(
+  suggestIkalWords("coa", { mode: "image" })[0].paramSignature,
+  "COA coalescent · sculpte la ligne",
+);
+assert.equal(
+  suggestIkalWords("var", { mode: "image" })[0].paramSignature,
+  "VAR variatif · déforme la ligne",
+);
+assert.equal(suggestIkalWords("uftharļa", { mode: "image" })[0].form, "uftharļa");
+
 const replaced = replaceCompletionToken("acxw", completionTokenAt("acxw", 4), "ačxwuža");
 assert.equal(replaced.value, "ačxwuža ");
 assert.equal(replaced.caret, "ačxwuža ".length);
@@ -276,6 +292,15 @@ autocomplete.refresh();
 assert.equal(panel.hidden, false);
 assert.equal(panel.children[0].className, "suggestion inspector");
 assert.equal(panel.children[0].children[1].textContent, "image / shape · modes image, animation");
+
+textarea.value = "lyala:\n  avtarļa";
+textarea.selectionStart = textarea.value.length;
+textarea.selectionEnd = textarea.value.length;
+autocomplete.refresh();
+assert.equal(panel.hidden, false);
+assert.equal(panel.children[0].className, "suggestion inspector");
+assert.equal(panel.children[0].children[0].textContent, "avtarļa");
+assert.equal(panel.children[0].children[2].textContent, "COA coalescent · sculpte la ligne");
 
 textarea.value = "affrala(0.85) ";
 textarea.selectionStart = textarea.value.length;

@@ -6,9 +6,10 @@
   "scripts": {
     "docs:build": "uv run --extra docs mkdocs build --strict",
     "docs:serve": "uv run --extra docs mkdocs serve",
+    "generate:affiliation-forms": "node scripts/generate-affiliation-forms.mjs",
     "generate:audio-affixes": "node scripts/generate-audio-affixed-forms.mjs",
     "generate:visual-affixes": "node scripts/generate-visual-affixed-forms.mjs",
-    "test": "node tests/poc-parser.test.mjs && node tests/ikal-audio-affix-generation.test.mjs && node tests/ikal-visual-affix-generation.test.mjs && node tests/ithkuil-adapter.test.mjs && node tests/ithkuil-library-conformance.test.mjs && node tests/ithkuil-seed-roots.test.mjs && node tests/poc-to-ikal-migration.test.mjs && node tests/ithkuil-to-params.test.mjs && node tests/ithkuil-program-parser.test.mjs && node tests/ikal-parser.test.mjs && node tests/ikal-autocomplete.test.mjs && node tests/poc-animation.test.mjs && node tests/field-visual.test.mjs && node tests/poc-music.test.mjs && node tests/ikal-poc.test.mjs",
+    "test": "node tests/poc-parser.test.mjs && node tests/ikal-audio-affix-generation.test.mjs && node tests/ikal-visual-affix-generation.test.mjs && node tests/ikal-affiliation-generation.test.mjs && node tests/ithkuil-adapter.test.mjs && node tests/ithkuil-library-conformance.test.mjs && node tests/ithkuil-seed-roots.test.mjs && node tests/poc-to-ikal-migration.test.mjs && node tests/ithkuil-to-params.test.mjs && node tests/ithkuil-program-parser.test.mjs && node tests/ikal-parser.test.mjs && node tests/ikal-autocomplete.test.mjs && node tests/poc-animation.test.mjs && node tests/field-visual.test.mjs && node tests/poc-music.test.mjs && node tests/ikal-poc.test.mjs",
     "serve": "python -m http.server 8000"
   },
   "dependencies": {

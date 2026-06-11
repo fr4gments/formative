@@ -117,6 +117,25 @@ assert.equal(sparkScatter.family, "spark-scatter");
 assert.equal(sparkScatter.lexical.stem, 2);
 assert.equal(sparkScatter.visualEffects.fracture > 0.5, true);
 
+assert.equal(filament.conjugation.affiliation, "CSL");
+assert.equal(filament.conjugation.operator, "independant");
+
+const coalescedFilament = paramsForForm("avtarļa");
+assert.equal(coalescedFilament.family, "filament");
+assert.equal(coalescedFilament.conjugation.affiliation, "COA");
+assert.equal(coalescedFilament.conjugation.operator, "complementaire");
+assert.equal(coalescedFilament.conjugation.label, "sculpte la ligne");
+
+const reinforcedCloud = paramsForForm("ufthanļa");
+assert.equal(reinforcedCloud.family, "cloud");
+assert.equal(reinforcedCloud.lexical.stem, 3);
+assert.equal(reinforcedCloud.conjugation.operator, "associatif");
+
+const displacingMotion = paramsForForm("traňa");
+assert.equal(displacingMotion.family, "linear-motion");
+assert.equal(displacingMotion.conjugation.affiliation, "VAR");
+assert.equal(displacingMotion.conjugation.operator, "conflictuel");
+
 const scaledFilament = paramsForForm("avtalöxa");
 assert.equal(scaledFilament.family, "filament");
 assert.equal(scaledFilament.visualAffixes.scale, 6);

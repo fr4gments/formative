@@ -73,6 +73,30 @@ const renders = ["CSL", "ASO", "COA", "VAR"].map((affiliation) => frameToText(re
 })));
 assert.equal(new Set(renders).size, 4, "les 4 affiliations doivent donner 4 images différentes");
 
+// Étape 5.7 — la conjugaison est écrivable : une forme d'Affiliation tapée
+// porte son opérateur jusqu'au moteur.
+const typedCoa = imageLayersFor("lyala:\n  avtala uftharļa");
+assert.equal(operatorForProgram(typedCoa[0].sequence[1]), "complementaire");
+
+// La graine d'un mot vient de son mot de base : entre ces quatre programmes,
+// seule la conjugaison change, et chacune donne une image différente.
+const typedRenders = ["ufthala", "ufthanļa", "uftharļa", "ufthaňa"].map((cloud) => frameToText(renderFieldFrame({
+  ...SIZE,
+  layers: imageLayersFor("lyala:\n  avtala " + cloud),
+  mode: "image",
+})));
+assert.equal(new Set(typedRenders).size, 4, "les formes d'Affiliation tapées doivent donner 4 images différentes");
+
+// Seule sur sa ligne, une variante ASO / COA n'a rien à conjuguer : même
+// matière que le mot de base. Une variante VAR déplace au lieu de dessiner.
+assert.equal(
+  frameToText(renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  uftharļa"), mode: "image" })),
+  frameToText(renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  ufthala"), mode: "image" })),
+);
+const soloVar = renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  ufthaňa"), mode: "image" });
+assert.notEqual(frameToText(soloVar), frameToText(renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  ufthala"), mode: "image" })));
+assert.ok(inkOf(soloVar) > 20, "un mot VAR seul doit rester visible");
+
 // Couches superposées : chaque mot garde ses contrôles, pas de fusion globale.
 const oneLayer = renderFieldFrame({ ...SIZE, layers: imageLayersFor("lyala:\n  avtala"), mode: "image" });
 const twoLayers = renderFieldFrame({

@@ -1,3 +1,4 @@
+import { OPERATOR_FOR_AFFILIATION } from "../parser/ikal-affiliations.js";
 import { legacyProgramView } from "./program-view.js";
 
 // Moteur visuel unifié en champs (Étape 5.6).
@@ -38,13 +39,6 @@ const PALETTES = {
 
 // Rampe d'intensité : du vide au plein, lettres Ithkuil au milieu.
 const RAMP = [" ", "·", ":", ";", "ç", "ļ", "ž", "š", "ř", "x", "#", "▓", "█"];
-
-const OPERATOR_FOR_AFFILIATION = {
-  ASO: "associatif",
-  COA: "complementaire",
-  CSL: "independant",
-  VAR: "conflictuel",
-};
 
 function clamp01(value) {
   return Math.max(0, Math.min(1, value));
@@ -358,7 +352,10 @@ function compileWord(program, index) {
     operator: operatorForProgram(program),
     palette: PALETTES[family] || PALETTES.rest,
     program,
-    seed: hashString((program?.text || "?") + "/" + index),
+    // La graine vient du mot de base, pas du texte tapé : une variante
+    // d'affixe ou d'Affiliation garde la même matière que son mot de base,
+    // seule la transformation / conjugaison change.
+    seed: hashString((program?.seedRoot?.form || program?.text || "?") + "/" + index),
   };
 }
 

@@ -84,7 +84,42 @@ Deux mots d'une meme ligne `lyala:` ne s'additionnent pas : ils se **conjuguent*
 | `COA` coalescent | roles distincts et complementaires | le mot sculpte la matiere accumulee (multiplication) |
 | `VAR` variatif | fonctions divergentes, ensemble chaotique | le mot deforme les coordonnees des autres (deplacement) |
 
-Le vocabulaire actuel n'a pas encore de formes canoniques avec `ASO` / `COA` / `VAR` marques : tous les mots seeds sont `CSL` par defaut. La generation de ces formes fait partie de l'elargissement du vocabulaire.
+## Formes d'Affiliation : la conjugaison ecrivable
+
+Chaque mot de matiere visuelle (primitives d'image et mots de mouvement) existe en quatre formes : la forme de base est `CSL` (defaut), et trois variantes generees marquent l'Affiliation dans le bloc Ca. Quand l'Affiliation est la seule categorie marquee du Ca, la grammaire officielle (section 3.6) lui donne une forme « standalone » :
+
+| Affiliation | Ca standalone | Exemple (`avtala`) | Operateur de conjugaison |
+| --- | --- | --- | --- |
+| `CSL` consolidatif | `l` | `avtala` | territoires independants |
+| `ASO` associatif | `nļ` | `avtanļa` | renforce la ligne |
+| `COA` coalescent | `rļ` | `avtarļa` | sculpte la ligne |
+| `VAR` variatif | `ň` | `avtaňa` | deforme la ligne |
+
+Les 30 formes generees couvrent les mots de matiere : `allwala`, `špala`, `fřala`, `ftala`, `avtala`, `ufthala`, `amzmala`, `etçvala`, `trala`, `glala`. Les mots glitch (`affrala`, `sčala`) n'ont pas de variantes : ils transforment toute la ligne, l'operateur de conjugaison ne les concerne pas.
+
+Regles de lecture :
+
+- une variante d'Affiliation herite des `params` de son mot de base : meme famille, meme champ, meme matiere (meme graine de bruit) — seule la conjugaison change ;
+- seule sur sa ligne, une variante `ASO` / `COA` rend exactement comme son mot de base : l'Affiliation decrit la relation entre les mots d'une ligne, elle n'a rien a dire quand le mot est seul ; une variante `VAR` seule deplace au lieu de dessiner (matiere fantome, plus discrete) ;
+- la conjugaison s'exprime dans `lyala:` (tous les mots d'une ligne sont simultanes) ; dans `lyula:`, la sequence avance d'un mot par pas, l'operateur n'y a donc pas encore d'effet visible — les variantes y restent valides.
+
+Exemples :
+
+```ikal
+lyala:
+  avtala ufthala     # CSL : filaments et nuage, chacun son territoire
+  avtala ufthanļa    # ASO : le nuage renforce les filaments (fusion ecran)
+  avtala uftharļa    # COA : le nuage sculpte les filaments (multiplication)
+  avtala ufthaňa     # VAR : le nuage deforme les filaments (deplacement)
+```
+
+Les formes sont generees par `@zsnout/ithkuil` puis commitees dans `src/parser/generated/ikal-affiliation-forms.js`.
+
+Commande de regeneration :
+
+```bash
+npm run generate:affiliation-forms
+```
 
 ## Exemples
 
@@ -122,6 +157,9 @@ L'editeur peut retrouver ces formes avec des alias de recherche :
 | `glitch` | `avtaläňfa` |
 | `siz6` | forme avec `SIZ/6` |
 | `col2` | forme avec `COL/2` |
+| `coa` ou `sculpte` | `avtarļa` |
+| `aso` ou `renforce` | `avtanļa` |
+| `var` ou `deforme` | `avtaňa` |
 
 Ces alias ne sont pas des mots IKAL. Ils servent uniquement a retrouver la forme canonique.
 

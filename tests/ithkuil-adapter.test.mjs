@@ -92,6 +92,27 @@ assert.deepEqual(visualCombo.ithkuil.affixes.slotVII, [
   { cs: "ňv", degree: 2, type: 1 },
 ]);
 
+const coalescentFilament = parseIthkuilWord("avtarļa");
+assert.equal(coalescentFilament.error, undefined);
+assert.equal(coalescentFilament.ithkuil.root, "vt");
+assert.equal(coalescentFilament.ithkuil.normalized, "avtarļa");
+assert.equal(coalescentFilament.ithkuil.ca.affiliation, "COA");
+assert.deepEqual(coalescentFilament.ithkuil.affixes, {
+  slotV: [],
+  slotVII: [],
+});
+
+const associativeCloud = parseIthkuilWord("ufthanļa");
+assert.equal(associativeCloud.error, undefined);
+assert.equal(associativeCloud.ithkuil.root, "fth");
+assert.equal(associativeCloud.ithkuil.stem, 3);
+assert.equal(associativeCloud.ithkuil.ca.affiliation, "ASO");
+
+const variativeMotion = parseIthkuilWord("traňa");
+assert.equal(variativeMotion.error, undefined);
+assert.equal(variativeMotion.ithkuil.root, "tr");
+assert.equal(variativeMotion.ithkuil.ca.affiliation, "VAR");
+
 const referential = parseIthkuilWord("royež");
 assert.equal(referential.error, undefined);
 assert.equal(referential.ithkuil.type, "referential");
