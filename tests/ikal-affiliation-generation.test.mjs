@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { formatGeneratedAffiliationForms } from "../scripts/generate-affiliation-forms.mjs";
 
-const generatedPath = new URL("../src/parser/generated/ikal-affiliation-forms.js", import.meta.url);
+const generatedPath = new URL("./fixtures/ikal-affiliation-forms.js", import.meta.url);
 const current = readFileSync(generatedPath, "utf8");
 
 assert.equal(current, formatGeneratedAffiliationForms());
