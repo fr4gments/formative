@@ -35,6 +35,7 @@ import {
   formatParamSignatureForSeedRoot,
   paramFamilyForSeedRoot,
 } from "../parser/ikal-param-signatures.js";
+import { IKAL_TEMPO_DECLARATIONS, IKAL_TEMPO_ROOT } from "../parser/ikal-tempo.js";
 import { analyzeIthkuilToken } from "../parser/ithkuil-program-parser.js";
 
 const TOKEN_DELIMITER = /[\s(),:]/;
@@ -564,6 +565,10 @@ export function suggestIkalWords(query, {
     .map((form) => suggestionFromMotifForm(form, scoreMotifForm(form, foldedQuery)))
     .filter((suggestion) => suggestion.score > 0)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const tempoSuggestions = TEMPO_FORMS
+    .map((entry) => suggestionFromTempoForm(entry, scoreTempoForm(entry, foldedQuery)))
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
   const merged = [
     ...rootSuggestions,
     ...audioSuggestions,
@@ -571,6 +576,7 @@ export function suggestIkalWords(query, {
     ...affiliationSuggestions,
     ...compositionSuggestions,
     ...motifFormSuggestions,
+    ...tempoSuggestions,
   ].sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form));
   const seenForms = new Set();
   const unique = [];
@@ -831,6 +837,52 @@ function suggestionFromMotifForm(form, score) {
     score,
     sortRank: motifFormRank(form),
     sense: "ton résonnant — motif",
+  };
+}
+
+// --- En-têtes de TEMPO : comme tout le vocabulaire, on les tape par leur
+// approximation ASCII (dvyal… → dvyalölca) et la forme à diacritiques est
+// suggérée. Le tempo est global ; les 9 degrés = lent → rapide. ---
+const TEMPO_FORMS = Object.entries(IKAL_TEMPO_DECLARATIONS).map(([form, degree]) => ({ degree, form }));
+
+function tempoSpeedLabel(degree) {
+  return degree <= 3 ? "lent" : degree <= 6 ? "moyen" : "rapide";
+}
+
+function scoreTempoForm(entry, query) {
+  const folded = asciiFold(entry.form);
+
+  if (entry.form === query) {
+    return 980;
+  }
+
+  if (folded === query) {
+    return 880;
+  }
+
+  if (folded.startsWith(query)) {
+    return 620 - folded.length / 100;
+  }
+
+  if (folded.includes(query)) {
+    return 430;
+  }
+
+  return 0;
+}
+
+function suggestionFromTempoForm(entry, score) {
+  return {
+    compatibleModes: ["music"],
+    cr: IKAL_TEMPO_ROOT,
+    domain: "music",
+    family: "tempo",
+    form: entry.form,
+    migrationFrom: [],
+    paramSignature: "tempo " + entry.degree + "/9 · " + tempoSpeedLabel(entry.degree),
+    score,
+    sortRank: entry.degree,
+    sense: "tempo global de la composition",
   };
 }
 

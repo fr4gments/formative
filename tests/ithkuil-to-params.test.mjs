@@ -306,4 +306,11 @@ for (const [form, timbre] of [
   assert.equal(params.motif.timbre, timbre, form + " → timbre " + timbre);
 }
 
+// Nombre de notes du motif = affixe gradué vj (degré → compte), PAS la
+// Configuration (qui ne distingue que un/deux/plusieurs). L'affixe débloque 4,
+// 5… notes, impossibles via la seule Configuration.
+assert.equal(paramsForForm("amžvala").motif.count, 1); // forme nue = 1 note
+assert.equal(paramsForForm("emžvulivja").motif.count, 4); // vj degré 4
+assert.equal(paramsForForm("emžvulëivja").motif.count, 5); // vj degré 5
+
 console.log("ithkuil-to-params ok");

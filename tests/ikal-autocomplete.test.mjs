@@ -184,17 +184,17 @@ assert.equal(decompositionInspection("wala", null), null);
 assert.equal(suggestIkalWords("amz", { mode: "music" })[0].form, "amžvala"); // octave grave
 assert.equal(suggestIkalWords("emz", { mode: "music" })[0].form, "emžvala"); // octave médium
 assert.equal(suggestIkalWords("umz", { mode: "music" })[0].form, "umžvala"); // octave aiguë
-// le fold ASCII d'un motif retombe sur la forme à diacritiques
-assert.equal(suggestIkalWords("emzvuza", { mode: "music" })[0].form, "emžvuža");
+// le fold ASCII d'un motif retombe sur la forme à diacritiques (nb de notes = affixe vj)
+assert.equal(suggestIkalWords("emzvulevja", { mode: "music" })[0].form, "emžvulevja");
 assert.equal(
-  suggestIkalWords("emzvuza", { mode: "music" })[0].paramSignature,
+  suggestIkalWords("emzvulevja", { mode: "music" })[0].paramSignature,
   "ton · montant · pas · 3 notes · octave 2 · départ 1",
 );
 // les sources à hauteur ne sont proposées qu'en musique
 assert.equal(suggestIkalWords("emz", { mode: "image" }).length, 0);
 // l'inspecteur décode le motif d'une forme à hauteur tapée
 assert.equal(
-  decompositionInspection("emžvuža", "music").paramSignature,
+  decompositionInspection("emžvulevja", "music").paramSignature,
   "ton · montant · pas · 3 notes · octave 2 · départ 1",
 );
 
@@ -207,6 +207,11 @@ assert.equal(suggestIkalWords("ally", { mode: "music" })[0].form, "allyala"); //
 assert.equal(suggestIkalWords("cloche", { mode: "music" })[0].form, "žbala");
 assert.equal(suggestIkalWords("drone", { mode: "music" })[0].form, "ařżala");
 assert.equal(suggestIkalWords("chant", { mode: "music" })[0].form, "allyala");
+
+// Les en-têtes de tempo (dvy + degré gradué) sont aussi trouvables par approximation.
+assert.equal(suggestIkalWords("dvyalulca", { mode: "music" })[0].form, "dvyalulca");
+assert.equal(suggestIkalWords("dvyalulca", { mode: "music" })[0].paramSignature, "tempo 9/9 · rapide");
+assert.ok(suggestIkalWords("dvyal", { mode: "music" }).some((s) => s.form === "dvyalalca"));
 
 const replaced = replaceCompletionToken("acxw", completionTokenAt("acxw", 4), "ačxwuža");
 assert.equal(replaced.value, "ačxwuža ");

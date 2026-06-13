@@ -110,6 +110,7 @@ export function createAudioEngine({
   let convolver = null;
   let shared = null;
   let startPromise = null;
+  let activeStep = stepSeconds; // durée d'un pas, ajustable par le tempo global
 
   let layers = [];
   let playStart = 0; // instant audio du créneau d'index 0
@@ -132,7 +133,7 @@ export function createAudioEngine({
 
   function scheduleVoice(instance, when) {
     const builder = VOICE_BUILDERS[instance.spec.kind] || VOICE_BUILDERS.tone;
-    const voice = builder(ctx, instance.spec, { startTime: when, stepDur: stepSeconds, peak }, shared);
+    const voice = builder(ctx, instance.spec, { startTime: when, stepDur: activeStep, peak }, shared);
 
     let node = voice.output;
     const sources = [...voice.sources];
@@ -194,7 +195,7 @@ export function createAudioEngine({
       while (cursor.nextTime < horizon) {
         fireSlot(layer.slots[cursor.nextIndex % layer.slots.length], cursor.nextTime);
         cursor.nextIndex++;
-        cursor.nextTime += stepSeconds;
+        cursor.nextTime += activeStep;
       }
     }
 
@@ -283,6 +284,11 @@ export function createAudioEngine({
     cursors.length = 0;
   }
 
+  // Tempo global : durée d'un pas en secondes (null → vitesse par défaut).
+  function setTempo(seconds) {
+    activeStep = seconds && seconds > 0 ? seconds : stepSeconds;
+  }
+
   function currentSlotIndex(layerIndex) {
     const layer = layers[layerIndex];
 
@@ -296,7 +302,7 @@ export function createAudioEngine({
       return 0;
     }
 
-    return Math.floor(elapsed / stepSeconds) % layer.slots.length;
+    return Math.floor(elapsed / activeStep) % layer.slots.length;
   }
 
   function getVisualPrograms() {
@@ -340,6 +346,7 @@ export function createAudioEngine({
     isRunning: () => Boolean(ctx),
     setLayers,
     setSequence,
+    setTempo,
     start,
     // exposé pour les tests : déclenche un cycle du séquenceur manuellement.
     _tick: tick,

@@ -1,6 +1,7 @@
 import { parseIthkuilWord } from "./ithkuil-adapter.js";
 import { userParamsFromPositionals } from "./ikal-param-signatures.js";
 import { modeForDeclaration } from "./ikal-mode-compatibility.js";
+import { tempoForDeclaration } from "./ikal-tempo.js";
 import { seedRootForIthkuil } from "./ithkuil-seed-roots.js";
 import { paramsForIthkuilWord } from "./ithkuil-to-params.js";
 
@@ -89,6 +90,30 @@ function parseModeDeclaration(line, lineNumber) {
     modeToken,
     modeWord: modeResult.word,
   };
+}
+
+// En-tête de TEMPO global : un mot de rythme (dvy + degré gradué), seul sur sa
+// ligne, comme une déclaration de mode. Reconnu par forme exacte → degré 1-9.
+function parseTempoDeclaration(line) {
+  const match = /^([^\s:]+):\s*(.*)$/.exec(line);
+
+  if (!match) {
+    return null;
+  }
+
+  const degree = tempoForDeclaration(match[1]);
+
+  if (degree == null) {
+    return null;
+  }
+
+  if (match[2].trim()) {
+    return {
+      error: "déclaration de tempo invalide : « " + match[1] + ": » doit être seule sur sa ligne",
+    };
+  }
+
+  return { degree };
 }
 
 function parsePositionValue(text) {
@@ -267,9 +292,25 @@ export function parseIthkuilProgram(text) {
   let activeModeToken = null;
   let activeModeWord = null;
   let activeModeImplicit = true;
+  let tempo = null; // degré 1-9 du tempo global, ou null (vitesse par défaut)
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // Tempo global : intercepté avant le test de mode (sinon « mode invalide »).
+    const tempoDeclaration = parseTempoDeclaration(line.text);
+
+    if (tempoDeclaration?.error) {
+      return {
+        error: lines.length === 1 ? tempoDeclaration.error : "ligne " + line.lineNumber + " : " + tempoDeclaration.error,
+      };
+    }
+
+    if (tempoDeclaration) {
+      tempo = tempoDeclaration.degree;
+      continue;
+    }
+
     const declaration = parseModeDeclaration(line.text, line.lineNumber);
 
     if (declaration?.error) {
@@ -333,6 +374,7 @@ export function parseIthkuilProgram(text) {
   return {
     diagnostics,
     layers,
+    tempo,
     text: lines.map((line) => line.text).join("\n"),
     words: layers.flatMap((layer) => layer.words),
   };

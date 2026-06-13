@@ -169,8 +169,10 @@ export function ikalVisualSuggestionForms() {
 // Sources à hauteur : un mot = un MOTIF. Les formes-motifs sont ÉNUMÉRÉES
 // (comme les formes affixées audio/visuelles) pour qu'on les trouve en tapant
 // leur approximation ASCII (emz -> emžvuža…) — la façon dont on écrit les mots
-// dans tout le projet. Dimensions : octave (Stem), nb de notes (Configuration),
+// dans tout le projet. Dimensions : octave (Stem), nb de notes (affixe vj),
 // contour + intervalle (affixes fb / řks), note de départ (affixe lc).
+// On énumère jusqu'à MOTIF_MAX_NOTES notes pour les suggestions ; en tapant, le
+// parser accepte le degré complet de l'affixe vj (jusqu'à 9 notes).
 const IKAL_TONE_SOURCE_ROOTS = Object.freeze(["mžv", "žb", "řż", "žd", "lly"]);
 // degrés représentatifs, cohérents avec ikal-motif-affixes.js
 // (fb : 1-3 montant, 4-6 ondulant, 7-9 descendant · řks : >=6 sauts)
@@ -183,7 +185,7 @@ const MOTIF_INTERVAL_FORMS = [
   { interval: "step", rks: null },
   { interval: "leap", rks: 7 },
 ];
-const MOTIF_COUNT_CONFIG = { 1: null, 2: "DPX", 3: "MFC" };
+const MOTIF_MAX_NOTES = 5; // suggestions jusqu'à 5 notes (le parser accepte 1-9)
 
 let motifSuggestionCache = null;
 
@@ -203,7 +205,7 @@ export function ikalMotifSuggestionForms() {
     }
 
     for (const stem of [1, 2, 3]) {
-      for (const count of [1, 2, 3]) {
+      for (let count = 1; count <= MOTIF_MAX_NOTES; count++) {
         // contour / intervalle n'ont de sens qu'à partir de 2 notes.
         const contours = count === 1 ? [MOTIF_CONTOUR_FORMS[0]] : MOTIF_CONTOUR_FORMS;
         const intervals = count === 1 ? [MOTIF_INTERVAL_FORMS[0]] : MOTIF_INTERVAL_FORMS;
@@ -225,11 +227,15 @@ export function ikalMotifSuggestionForms() {
                 slotVIIAffixes.push({ cs: "řks", degree: iv.rks, type: 1 });
               }
 
+              // nb de notes = affixe gradué vj (degré = compte) ; 1 note = nu.
+              if (count > 1) {
+                slotVIIAffixes.push({ cs: "vj", degree: count, type: 1 });
+              }
+
               let form;
 
               try {
                 form = composeIkalForm(seed, {
-                  configuration: MOTIF_COUNT_CONFIG[count],
                   fn: count > 1 ? "DYN" : null,
                   slotVIIAffixes,
                   stem,

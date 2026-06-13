@@ -170,6 +170,7 @@ export function parseIkalProgram(text) {
     ...groups,
     sequence: firstSequence(layers, groups.musicLayers),
     sourceSyntax: "ithkuil",
+    tempo: ithkuil.tempo ?? null,
     text: ithkuil.text,
     words: ithkuil.words,
   };

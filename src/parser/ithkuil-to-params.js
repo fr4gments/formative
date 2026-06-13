@@ -449,7 +449,6 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   // structurelle (nb par Configuration, accord↔arpège par Function, octave par Stem).
   const motif = isTone
     ? motifShapeFromAffixes(ithkuil.affixes?.slotVII, {
-        count: multiplicity.count,
         deploy: motion.kind === "dynamic" ? "sequence" : "chord",
         stem: ithkuil.stem || 1,
       })

@@ -236,6 +236,30 @@ assert.ok(ctx.stopped.length > stoppedBefore, "les sources actives ont été arr
 assert.equal(engine.getVisualProgram(), null);
 assert.deepEqual(engine.getVisualPrograms(), []);
 
+// setTempo : à vitesse rapide, un cycle du séquenceur planifie PLUS de notes
+// (plus de créneaux tiennent dans la fenêtre d'anticipation) qu'à vitesse lente.
+const arp5 = { params: { family: "tone", effects: {}, motif: { start: 1, contour: "up", interval: "step", count: 5, stem: 2, deploy: "sequence", timbre: "resonant" } } };
+
+engine.setTempo(0.04); // rapide
+engine.setLayers([{ sequence: [arp5] }]);
+ctx.currentTime += 0.06;
+const beforeFast = ctx.started.length;
+engine._tick();
+const firedFast = ctx.started.length - beforeFast;
+
+engine.setTempo(0.4); // lent
+engine.setLayers([{ sequence: [arp5] }]);
+ctx.currentTime += 0.06;
+const beforeSlow = ctx.started.length;
+engine._tick();
+const firedSlow = ctx.started.length - beforeSlow;
+
+assert.ok(firedFast > firedSlow, `tempo rapide (${firedFast}) doit planifier plus de notes que lent (${firedSlow})`);
+
+// setTempo(null) → retour à la vitesse par défaut (pas de crash).
+engine.setTempo(null);
+engine.clearSequence();
+
 // ─── 6) Erreur lisible si Web Audio est absent ──────────────────────────────
 await assert.rejects(() => createAudioEngine({ win: {} }).start(), /Web Audio API indisponible/);
 

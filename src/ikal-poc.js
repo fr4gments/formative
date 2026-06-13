@@ -3,6 +3,7 @@ import { createFieldVisual } from "./engines/field-visual.js";
 import { createPocAnimation } from "./engines/poc-animation.js";
 import { createAudioEngine } from "./engines/audio-engine.js";
 import { parseIkalProgram } from "./parser/ikal-parser.js";
+import { stepSecondsForTempo } from "./parser/ikal-tempo.js";
 
 // Auto-indentation des blocs de mode. Les instructions sous un en-tête
 // (`alkala:` / `lyala:` / `lyula:`) DOIVENT être indentées — sinon le parser
@@ -220,6 +221,7 @@ export function createIkalPocApp({
       readout.textContent = "✗ audio : " + error.message;
       readout.className = "err";
     });
+    music.setTempo(result.tempo ? stepSecondsForTempo(result.tempo) : null);
     music.setLayers(routedLayers.musicLayers);
 
     if (layers.some((layer) => layer.implicitMode === false)) {
