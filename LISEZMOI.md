@@ -2,6 +2,8 @@
 
 > 🇬🇧 **English version: [README.md](README.md)**
 
+**▶ Essayer en ligne : [fr4gments.github.io/formative](https://fr4gments.github.io/formative/)** — et la [référence du langage](https://fr4gments.github.io/formative/docs/).
+
 **IKAL** — *Ithkuil Kinetic Art Language* — est un langage expérimental d'art
 génératif. On **tape de vraies formes de mots [Ithkuil 4](https://ithkuil.net)**,
 et le **sens** de chaque mot pilote une sortie générative : image fixe,

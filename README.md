@@ -2,6 +2,8 @@
 
 > 🇫🇷 **Version française : [LISEZMOI.md](LISEZMOI.md)**
 
+**▶ Try it live: [fr4gments.github.io/formative](https://fr4gments.github.io/formative/)** — and the [language reference](https://fr4gments.github.io/formative/docs/).
+
 **IKAL** — *Ithkuil Kinetic Art Language* — is an experimental generative-art
 language. You **type real [Ithkuil 4](https://ithkuil.net) word-forms**, and each
 word's **meaning** drives generative output: still images, animation, and
