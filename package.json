@@ -10,8 +10,8 @@
     "generate:audio-affixes": "node scripts/generate-audio-affixed-forms.mjs",
     "generate:ithkuil-runtime": "node scripts/extract-ithkuil-runtime.mjs",
     "generate:visual-affixes": "node scripts/generate-visual-affixed-forms.mjs",
-    "test": "node tests/poc-parser.test.mjs && node tests/ikal-audio-affix-generation.test.mjs && node tests/ikal-visual-affix-generation.test.mjs && node tests/ikal-affiliation-generation.test.mjs && node tests/ithkuil-adapter.test.mjs && node tests/ikal-open-grammar.test.mjs && node tests/ithkuil-library-conformance.test.mjs && node tests/ithkuil-seed-roots.test.mjs && node tests/poc-to-ikal-migration.test.mjs && node tests/ithkuil-to-params.test.mjs && node tests/ithkuil-program-parser.test.mjs && node tests/ikal-parser.test.mjs && node tests/ikal-autocomplete.test.mjs && node tests/poc-animation.test.mjs && node tests/field-visual.test.mjs && node tests/poc-music.test.mjs && node tests/ikal-poc.test.mjs",
-    "serve": "python -m http.server 8000"
+    "test": "node tests/poc-parser.test.mjs && node tests/ikal-audio-affix-generation.test.mjs && node tests/ikal-visual-affix-generation.test.mjs && node tests/ikal-affiliation-generation.test.mjs && node tests/ithkuil-adapter.test.mjs && node tests/ikal-open-grammar.test.mjs && node tests/ithkuil-library-conformance.test.mjs && node tests/ithkuil-seed-roots.test.mjs && node tests/poc-to-ikal-migration.test.mjs && node tests/ithkuil-to-params.test.mjs && node tests/ithkuil-program-parser.test.mjs && node tests/ikal-parser.test.mjs && node tests/ikal-autocomplete.test.mjs && node tests/poc-animation.test.mjs && node tests/field-visual.test.mjs && node tests/motif.test.mjs && node tests/audio-engine.test.mjs && node tests/ikal-poc.test.mjs",
+    "serve": "python scripts/serve.py"
   },
   "dependencies": {
     "@zsnout/ithkuil": "0.1.122"

@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKAL — prototype son : TON résonnant (mžv) + hauteur pentatonique</title>
+<style>
+  :root { --vert: #7CFC6A; --sombre: #6a826a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; background: #050805; }
+  body {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, rgba(0,0,0,0) 1px 4px),
+      linear-gradient(135deg, #020405 0%, #050805 42%, #080509 100%);
+    font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
+    color: var(--vert);
+    padding: 28px 22px; line-height: 1.5;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 18px; letter-spacing: 1px; font-weight: normal; }
+  h1 b { letter-spacing: 3px; }
+  .sub { color: var(--sombre); font-size: 12px; margin-top: 4px; }
+  .box {
+    border: 1px solid rgba(124,252,106,0.25); border-radius: 6px;
+    padding: 14px 16px; margin-top: 18px; background: rgba(124,252,106,0.03);
+  }
+  .box h2 { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--sombre); margin-bottom: 8px; }
+  .mech { font-size: 13px; color: #b8c4c4; }
+  .mech b { color: var(--vert); }
+  label { font-size: 13px; color: #b8c4c4; display: inline-flex; gap: 8px; align-items: center; }
+  input[type="text"] {
+    width: 100%; margin-top: 6px; padding: 10px 12px; font: inherit; font-size: 16px;
+    background: #04110a; color: var(--vert); border: 1px solid rgba(124,252,106,0.35);
+    border-radius: 5px; letter-spacing: 3px;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--vert); }
+  .row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+  .seg { display: inline-flex; border: 1px solid rgba(124,252,106,0.35); border-radius: 5px; overflow: hidden; }
+  .seg button { background: #04110a; color: var(--sombre); border: 0; padding: 7px 13px; font: inherit; cursor: pointer; }
+  .seg button.on { background: var(--vert); color: #04110a; }
+  input[type="range"] { accent-color: var(--vert); width: 150px; }
+  .play {
+    margin-top: 18px; display: flex; gap: 12px; align-items: center;
+  }
+  .play button {
+    font: inherit; font-size: 15px; letter-spacing: 1px; padding: 10px 22px; cursor: pointer;
+    background: var(--vert); color: #04110a; border: 0; border-radius: 5px;
+  }
+  .play button.stop { background: #04110a; color: var(--vert); border: 1px solid rgba(124,252,106,0.45); }
+  .play button:disabled { opacity: 0.4; cursor: default; }
+  #steps { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 16px; }
+  .step {
+    border: 1px solid rgba(124,252,106,0.2); border-radius: 4px; padding: 6px 8px; min-width: 64px;
+    text-align: center; font-size: 12px; color: #b8c4c4;
+  }
+  .step.rest { color: #44524a; }
+  .step.active { border-color: var(--vert); background: rgba(124,252,106,0.12); }
+  .step .deg { color: var(--vert); font-size: 15px; }
+  .step .note { font-size: 13px; }
+  .step .form { color: var(--sombre); font-size: 10px; margin-top: 2px; word-break: break-all; }
+  .foot { color: var(--sombre); font-size: 12px; margin-top: 22px; }
+  .foot b { color: #b8c4c4; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><b>IKAL</b> — prototype son · <span style="color:var(--vert)">TON résonnant</span> (racine <code>mžv</code>)</h1>
+  <div class="sub">Étape 6 — la hauteur par la morphologie. Tape une suite de degrés, écoute la mélodie.</div>
+
+  <div class="box">
+    <h2>Le mécanisme</h2>
+    <div class="mech">
+      • La <b>note</b> = un <b>degré 1→9</b> (marche dans la gamme <b>pentatonique</b> : Do Ré Mi Sol La…).<br>
+      • L'<b>octave</b> = le <b>Stem</b> (1 grave · 2 médium · 3 aigu).<br>
+      • Le <b>timbre</b> = le sens de la racine <code>mžv</code> (« sonorous/resonant sound ») — <span style="color:var(--sombre)">4 variantes à comparer.</span><br>
+      <span style="color:var(--sombre)">Plus tard : consonance via l'Affiliation, accords via la Configuration, autres timbres.</span>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Programme</h2>
+    <label style="display:block">Suite de degrés (1–9, <code>.</code> = silence)
+      <input id="seq" type="text" value="1 3 5 6 5 3 2 1 . 3 5 6 8 6 5 3" spellcheck="false" autocomplete="off">
+    </label>
+    <div class="row">
+      <label>Timbre
+        <span class="seg" id="timbre">
+          <button data-timbre="resonant" class="on">résonnant</button>
+          <button data-timbre="crystal">cristallin</button>
+          <button data-timbre="dark">sombre</button>
+          <button data-timbre="metallic">métallique</button>
+        </span>
+      </label>
+    </div>
+    <div class="row">
+      <label>Octave (Stem)
+        <span class="seg" id="stem">
+          <button data-stem="1">1 · grave</button>
+          <button data-stem="2" class="on">2 · médium</button>
+          <button data-stem="3">3 · aigu</button>
+        </span>
+      </label>
+      <label>Vitesse <input id="speed" type="range" min="160" max="520" value="300"></label>
+      <label><input id="drone" type="checkbox"> bourdon (tonique tenue)</label>
+    </div>
+    <div class="play">
+      <button id="play">▶ Jouer</button>
+      <button id="stop" class="stop" disabled>■ Stop</button>
+      <span id="status" class="sub"></span>
+    </div>
+    <div id="steps"></div>
+  </div>
+
+  <div class="foot">
+    Prototype autonome (Web Audio standard, hors moteur IKAL) pour <b>valider le son</b> avant intégration.
+    Le mécanisme de hauteur (degré→note pentatonique, Stem→octave) est ici à l'identique de ce qui sera branché dans le moteur audio.
+  </div>
+</div>
+
+<script type="module">
+// ─── Théorie musicale ────────────────────────────────────────────────────
+// Pentatonique majeure = 5 notes, en demi-tons depuis la tonique : 0 2 4 7 9
+// (Do Ré Mi Sol La). Les 7 autres demi-tons {1,3,5,6,8,10,11} sont réservés
+// (chromatique) pour plus tard — voir ROADMAP Étape 6.
+const PENTA = [0, 2, 4, 7, 9];
+const NOTE_NAMES = ["Do", "Do♯", "Ré", "Ré♯", "Mi", "Fa", "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"];
+
+function midiForStep(step, stem) {
+  const idx = step - 1;                                    // degré 1 → idx 0
+  const semis = Math.floor(idx / 5) * 12 + PENTA[idx % 5]; // marche pentatonique, octaves cumulées
+  const base = 48 + (stem - 1) * 12;                       // Stem 1=Do3, 2=Do4, 3=Do5
+  return base + semis;
+}
+function freqForMidi(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+function noteName(m) { return NOTE_NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+
+// ─── Forme IKAL réelle (bonus, via le runtime morphologique embarqué) ──────
+// Affiche la vraie forme tapable : amžvala (tonique) ou amžvala + affixe pitch.
+let wordToIthkuil = null;
+import("../src/parser/generated/ithkuil-runtime.js")
+  .then((m) => { wordToIthkuil = m.wordToIthkuil; renderSteps(); })
+  .catch(() => {});
+
+function ikalForm(step, stem) {
+  if (!wordToIthkuil) return "amžvala…";
+  try {
+    return wordToIthkuil({
+      type: "UNF/C", root: "mžv", stem, shortcut: false,
+      slotVAffixes: [],
+      // tonique (degré 1) = forme nue ; au-delà = affixe pitch gradué (Cs « lc »).
+      slotVIIAffixes: step > 1 ? [{ cs: "lc", degree: step, type: 1 }] : [],
+    });
+  } catch { return "—"; }
+}
+
+// ─── Timbres : 4 variantes à comparer ──────────────────────────────────────
+// resonant / crystal / dark = harmoniques ENTIÈRES (PeriodicWave) + filtre
+// éventuel. metallic = partiels INHARMONIQUES (ratios non entiers) → le seul
+// moyen d'obtenir un vrai caractère cloche/métal (les harmoniques entières
+// sonnent toujours « musicales », jamais métalliques).
+const TIMBRES = {
+  resonant: { harmonics: [1, 0.5, 0.33, 0.2, 0.12, 0.07, 0.04], decay: 0.98, attack: 0.006, reverb: 0.26 },
+  crystal:  { harmonics: [1, 0.2, 0.55, 0.3, 0.5, 0.28, 0.4, 0.22, 0.3], decay: 0.86, attack: 0.002, reverb: 0.34, filter: { type: "highpass", freq: 350 } },
+  dark:     { harmonics: [1, 0.12, 0.04], decay: 0.99, attack: 0.012, reverb: 0.16, filter: { type: "lowpass", freq: 850, q: 0.9 } },
+  metallic: { partials: [[1, 1], [2.76, 0.6], [5.40, 0.35], [8.93, 0.22]], decay: 0.96, attack: 0.001, reverb: 0.38 },
+};
+function currentTimbre() {
+  return document.querySelector("#timbre button.on").dataset.timbre;
+}
+
+// ─── Synthèse Web Audio ────────────────────────────────────────────────────
+let ctx = null, master = null, reverbSend = null;
+const waves = {};
+let playing = false, loopTimer = null, stepTimer = null;
+const active = new Set();
+
+function makeImpulse(seconds, decay) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return buf;
+}
+
+function ensureAudio() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain();
+  master.gain.value = 0.85;
+  master.connect(ctx.destination);
+  // Petite réverbération pour faire « chanter » le son résonnant.
+  const conv = ctx.createConvolver();
+  conv.buffer = makeImpulse(1.8, 3.0);
+  reverbSend = ctx.createGain();
+  reverbSend.gain.value = 0.26;
+  reverbSend.connect(conv);
+  conv.connect(master);
+  // Une PeriodicWave par timbre à harmoniques entières (le métallique, lui,
+  // est fait de sinus inharmoniques à la volée — pas de wave pré-calculée).
+  for (const name of Object.keys(TIMBRES)) {
+    const h = TIMBRES[name].harmonics;
+    if (!h) continue;
+    const real = new Float32Array([0, ...h]);
+    const imag = new Float32Array(real.length);
+    waves[name] = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  }
+}
+
+function voice(freq, startTime, dur, peak) {
+  const tb = TIMBRES[currentTimbre()];
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, startTime);
+  g.gain.exponentialRampToValueAtTime(peak, startTime + tb.attack);     // attaque
+  g.gain.exponentialRampToValueAtTime(0.0008, startTime + dur * tb.decay); // retombée
+
+  let tail = g;
+  if (tb.filter) {
+    const f = ctx.createBiquadFilter();
+    f.type = tb.filter.type;
+    f.frequency.value = tb.filter.freq;
+    if (tb.filter.q) f.Q.value = tb.filter.q;
+    g.connect(f);
+    tail = f;
+  }
+  tail.connect(master);
+  tail.connect(reverbSend);
+
+  const oscs = [];
+  if (tb.partials) {
+    // métallique : plusieurs sinus à ratios inharmoniques (timbre de cloche).
+    for (const [ratio, amp] of tb.partials) {
+      const o = ctx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = freq * ratio;
+      const pg = ctx.createGain();
+      pg.gain.value = amp;
+      o.connect(pg);
+      pg.connect(g);
+      oscs.push(o);
+    }
+  } else {
+    const o = ctx.createOscillator();
+    o.setPeriodicWave(waves[currentTimbre()]);
+    o.frequency.value = freq;
+    o.connect(g);
+    oscs.push(o);
+  }
+
+  for (const o of oscs) {
+    o.onended = () => active.delete(o);
+    active.add(o);
+    o.start(startTime);
+    o.stop(startTime + dur + 0.05);
+  }
+}
+
+function parseSequence() {
+  return document.getElementById("seq").value.trim().split(/\s+/).map((tok) => {
+    if (/^[1-9]$/.test(tok)) return Number(tok);
+    return null; // silence
+  });
+}
+
+function currentStem() {
+  return Number(document.querySelector("#stem button.on").dataset.stem);
+}
+function stepDur() {
+  return 60 / Number(document.getElementById("speed").value); // « BPM » de croches
+}
+
+function scheduleLoop(seq, startTime) {
+  if (!playing) return;
+  const sd = stepDur();
+  const stem = currentStem();
+  reverbSend.gain.value = TIMBRES[currentTimbre()].reverb;
+  let t = startTime;
+
+  if (document.getElementById("drone").checked) {
+    voice(freqForMidi(midiForStep(1, stem) - 12), startTime, sd * seq.length, 0.10);
+  }
+
+  for (const step of seq) {
+    if (step !== null) {
+      voice(freqForMidi(midiForStep(step, stem)), t, Math.min(sd * 2.4, 1.1), 0.32);
+    }
+    t += sd;
+  }
+
+  const total = sd * seq.length;
+  loopTimer = setTimeout(() => scheduleLoop(seq, startTime + total), Math.max(20, (total - 0.12) * 1000));
+  animateSteps(seq, startTime, sd);
+}
+
+function animateSteps(seq, startTime, sd) {
+  clearInterval(stepTimer);
+  const els = [...document.querySelectorAll(".step")];
+  stepTimer = setInterval(() => {
+    if (!playing) { clearInterval(stepTimer); return; }
+    const elapsed = ctx.currentTime - startTime;
+    const i = ((Math.floor(elapsed / sd) % seq.length) + seq.length) % seq.length;
+    els.forEach((el, k) => el.classList.toggle("active", k === i));
+  }, 40);
+}
+
+function renderSteps() {
+  const seq = parseSequence();
+  const stem = currentStem();
+  const box = document.getElementById("steps");
+  box.innerHTML = "";
+  seq.forEach((step) => {
+    const el = document.createElement("div");
+    el.className = "step" + (step === null ? " rest" : "");
+    if (step === null) {
+      el.innerHTML = '<div class="deg">·</div><div class="note">silence</div>';
+    } else {
+      const midi = midiForStep(step, stem);
+      el.innerHTML = '<div class="deg">' + step + '</div>'
+        + '<div class="note">' + noteName(midi) + '</div>'
+        + '<div class="form">' + ikalForm(step, stem) + '</div>';
+    }
+    box.append(el);
+  });
+}
+
+function start() {
+  ensureAudio();
+  if (ctx.state === "suspended") ctx.resume();
+  const seq = parseSequence();
+  if (!seq.some((s) => s !== null)) return;
+  playing = true;
+  document.getElementById("play").disabled = true;
+  document.getElementById("stop").disabled = false;
+  document.getElementById("status").textContent = "▶ en lecture…";
+  scheduleLoop(seq, ctx.currentTime + 0.08);
+}
+
+function stop() {
+  playing = false;
+  clearTimeout(loopTimer);
+  clearInterval(stepTimer);
+  for (const o of active) { try { o.stop(); } catch { /* déjà fini */ } }
+  active.clear();
+  document.getElementById("play").disabled = false;
+  document.getElementById("stop").disabled = true;
+  document.getElementById("status").textContent = "■ arrêté";
+  document.querySelectorAll(".step.active").forEach((el) => el.classList.remove("active"));
+}
+
+// ─── Branchements UI ───────────────────────────────────────────────────────
+document.getElementById("play").addEventListener("click", start);
+document.getElementById("stop").addEventListener("click", stop);
+document.getElementById("seq").addEventListener("input", renderSteps);
+document.getElementById("stem").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll("#stem button").forEach((x) => x.classList.toggle("on", x === b));
+  renderSteps();
+});
+document.getElementById("timbre").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll("#timbre button").forEach((x) => x.classList.toggle("on", x === b));
+  // changement audible immédiatement à la note suivante — pas besoin de relancer.
+});
+
+renderSteps();
+</script>
+</body>
+</html>

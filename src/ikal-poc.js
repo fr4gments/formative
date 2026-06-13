@@ -1,8 +1,45 @@
 import { createIkalAutocomplete } from "./editor/ikal-autocomplete.js";
 import { createFieldVisual } from "./engines/field-visual.js";
 import { createPocAnimation } from "./engines/poc-animation.js";
-import { createPocMusic } from "./engines/poc-music.js";
+import { createAudioEngine } from "./engines/audio-engine.js";
 import { parseIkalProgram } from "./parser/ikal-parser.js";
+
+// Auto-indentation des blocs de mode. Les instructions sous un en-tête
+// (`alkala:` / `lyala:` / `lyula:`) DOIVENT être indentées — sinon le parser
+// les rejette ET l'autocomplétion se coupe. Comme un textarea n'indente pas
+// tout seul, on le fait : Entrée après un en-tête (ou dans un bloc déjà
+// indenté) ajoute l'indentation à la ligne suivante.
+const MODE_HEADER_LINE = /^\s*(?:alkala|lyala|lyula):\s*$/;
+
+export function autoIndentForEnter(value, caret) {
+  const lineStart = value.lastIndexOf("\n", caret - 1) + 1;
+  let lineEnd = value.indexOf("\n", caret);
+
+  if (lineEnd < 0) {
+    lineEnd = value.length;
+  }
+
+  const line = value.slice(lineStart, lineEnd);
+
+  if (MODE_HEADER_LINE.test(line)) {
+    return "  ";
+  }
+
+  const lead = line.match(/^[ \t]+/);
+
+  return lead ? lead[0] : null;
+}
+
+function insertAtCursor(textarea, text) {
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? start;
+
+  textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+  const caret = start + text.length;
+  textarea.selectionStart = caret;
+  textarea.selectionEnd = caret;
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+}
 
 export function createIkalPocApp({
   autocompletePanel,
@@ -13,7 +50,7 @@ export function createIkalPocApp({
   screen,
   stillButton,
   parse = parseIkalProgram,
-  createMusic = createPocMusic,
+  createMusic = createAudioEngine,
   createAnimation = createPocAnimation,
   createVisual = createFieldVisual,
   createAutocomplete = createIkalAutocomplete,
@@ -254,6 +291,13 @@ export function createIkalPocApp({
       if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         lance(cmd.value);
+      } else if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        const indent = autoIndentForEnter(cmd.value, cmd.selectionStart ?? cmd.value.length);
+
+        if (indent !== null) {
+          event.preventDefault();
+          insertAtCursor(cmd, "\n" + indent);
+        }
       } else if (event.key === "Escape") {
         silence();
       }

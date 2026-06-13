@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IKAL — prototype son : MOTIFS (un mot = une phrase, contrôlée par sa forme)</title>
+<style>
+  :root { --vert: #7CFC6A; --sombre: #6a826a; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { min-height: 100%; background: #050805; }
+  body {
+    background:
+      repeating-linear-gradient(180deg, rgba(255,255,255,0.025) 0 1px, rgba(0,0,0,0) 1px 4px),
+      linear-gradient(135deg, #020405 0%, #050805 42%, #080509 100%);
+    font-family: "DejaVu Sans Mono", "Menlo", "Consolas", monospace;
+    color: var(--vert);
+    padding: 26px 22px 60px; line-height: 1.5;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 17px; letter-spacing: 1px; font-weight: normal; }
+  h1 b { letter-spacing: 3px; }
+  .sub { color: var(--sombre); font-size: 12px; margin-top: 4px; }
+  code { color: #b8c4c4; }
+  .box {
+    border: 1px solid rgba(124,252,106,0.25); border-radius: 6px;
+    padding: 14px 16px; margin-top: 18px; background: rgba(124,252,106,0.03);
+  }
+  .box h2 { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--sombre); margin-bottom: 8px; }
+  .mech { font-size: 13px; color: #b8c4c4; }
+  .mech b { color: var(--vert); }
+  label { font-size: 13px; color: #b8c4c4; display: inline-flex; gap: 7px; align-items: center; }
+  select {
+    font: inherit; font-size: 13px; background: #04110a; color: var(--vert);
+    border: 1px solid rgba(124,252,106,0.35); border-radius: 4px; padding: 3px 6px;
+  }
+  .row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+  .seg { display: inline-flex; border: 1px solid rgba(124,252,106,0.35); border-radius: 5px; overflow: hidden; }
+  .seg button { background: #04110a; color: var(--sombre); border: 0; padding: 5px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .seg button.on { background: var(--vert); color: #04110a; }
+  input[type="range"] { accent-color: var(--vert); width: 140px; }
+  .play { margin-top: 16px; display: flex; gap: 12px; align-items: center; }
+  .play button {
+    font: inherit; font-size: 15px; letter-spacing: 1px; padding: 10px 22px; cursor: pointer;
+    background: var(--vert); color: #04110a; border: 0; border-radius: 5px;
+  }
+  .play button.stop { background: #04110a; color: var(--vert); border: 1px solid rgba(124,252,106,0.45); }
+  .play button:disabled { opacity: 0.4; cursor: default; }
+
+  .card {
+    border: 1px solid rgba(124,252,106,0.22); border-radius: 6px; padding: 10px 12px; margin-top: 10px;
+    background: rgba(124,252,106,0.02);
+  }
+  .card.active { border-color: var(--vert); background: rgba(124,252,106,0.10); }
+  .card.off { opacity: 0.45; }
+  .card-h { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .card-h .title { color: var(--vert); letter-spacing: 1px; }
+  .card-h .notes { color: #b8c4c4; font-size: 14px; letter-spacing: 1px; }
+  .ctrls { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin-top: 9px; }
+  .foot { color: var(--sombre); font-size: 12px; margin-top: 22px; }
+  .foot b { color: #b8c4c4; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><b>IKAL</b> — prototype son · <span style="color:var(--vert)">MOTIFS</span> (un mot = une phrase)</h1>
+  <div class="sub">La « voie du milieu » : tu ne poses pas chaque note, tu pilotes la <b>forme</b> de la ligne. 2-3 mots → une mélodie.</div>
+
+  <div class="box">
+    <h2>L'idée</h2>
+    <div class="mech">
+      Chaque <b>mot</b> encode un <b>motif</b> par sa forme — exactement comme un mot visuel encode un champ entier :<br>
+      • <b>départ</b> = la première note (degré pentatonique) &nbsp;·&nbsp; <b>sens</b> = monte / descend / ondule<br>
+      • <b>intervalle</b> = par pas (notes voisines) ou par sauts (tierces, → arpège) &nbsp;·&nbsp; <b>nb de notes</b> = la densité (Configuration)<br>
+      • <b>octave</b> = le Stem &nbsp;·&nbsp; <b>timbre</b> = la racine (ici <code>mžv</code>, à comparer ci-dessous)<br>
+      <span style="color:var(--sombre)">Bouge un réglage → la ligne se déforme, de façon prévisible. C'est ton contrôle mélodique.</span>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>Réglages globaux</h2>
+    <div class="row">
+      <label>Timbre
+        <span class="seg" id="timbre">
+          <button data-timbre="resonant" class="on">résonnant</button>
+          <button data-timbre="crystal">cristallin</button>
+          <button data-timbre="dark">sombre</button>
+          <button data-timbre="metallic">métallique</button>
+        </span>
+      </label>
+      <label>Vitesse <input id="speed" type="range" min="150" max="460" value="280"></label>
+    </div>
+    <div class="play">
+      <button id="play">▶ Jouer la phrase</button>
+      <button id="stop" class="stop" disabled>■ Stop</button>
+      <span id="status" class="sub"></span>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2>La phrase — jusqu'à 3 mots/motifs (décoche pour en retirer)</h2>
+    <div id="motifs"></div>
+  </div>
+
+  <div class="foot">
+    Prototype autonome (Web Audio, hors moteur IKAL) pour <b>sentir le contrôle de forme</b>.
+    Chaque réglage correspond à une dimension morphologique d'un mot Ithkuil (départ = affixe de hauteur, nb = Configuration,
+    octave = Stem…). Si ce contrôle te convient, on le branche dans IKAL et un vrai mot tapé déclenchera son motif.
+  </div>
+</div>
+
+<script type="module">
+// ─── Théorie : pentatonique majeure, étendue à toutes les octaves ──────────
+const PENTA = [0, 2, 4, 7, 9];
+const NOTE_NAMES = ["Do", "Do♯", "Ré", "Ré♯", "Mi", "Fa", "Fa♯", "Sol", "Sol♯", "La", "La♯", "Si"];
+// Un degré entier quelconque (même négatif) tombe sur une note pentatonique :
+// l'index parcourt la gamme et change d'octave aux passages.
+function midiForStep(step, stem) {
+  const idx = step - 1;
+  const semis = Math.floor(idx / 5) * 12 + PENTA[((idx % 5) + 5) % 5];
+  return 48 + (stem - 1) * 12 + semis;
+}
+function freqForMidi(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+function noteName(m) { return NOTE_NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1); }
+
+// ─── Le cœur : un motif = des degrés générés depuis sa FORME ────────────────
+function generateMotif(m) {
+  const inc = m.step === "saut" ? 2 : 1;
+  const degs = [];
+  if (m.contour === "montant") {
+    for (let i = 0; i < m.count; i++) degs.push(m.start + i * inc);
+  } else if (m.contour === "descendant") {
+    for (let i = 0; i < m.count; i++) degs.push(m.start - i * inc);
+  } else { // ondulant : monte puis redescend (triangle)
+    const up = Math.ceil(m.count / 2);
+    for (let i = 0; i < m.count; i++) {
+      const k = i < up ? i : (2 * up - 2 - i);
+      degs.push(m.start + k * inc);
+    }
+  }
+  return degs;
+}
+
+// ─── Timbres (mêmes 4 variantes que le prototype précédent) ─────────────────
+const TIMBRES = {
+  resonant: { harmonics: [1, 0.5, 0.33, 0.2, 0.12, 0.07, 0.04], decay: 0.98, attack: 0.006, reverb: 0.26 },
+  crystal:  { harmonics: [1, 0.2, 0.55, 0.3, 0.5, 0.28, 0.4, 0.22, 0.3], decay: 0.86, attack: 0.002, reverb: 0.34, filter: { type: "highpass", freq: 350 } },
+  dark:     { harmonics: [1, 0.12, 0.04], decay: 0.99, attack: 0.012, reverb: 0.16, filter: { type: "lowpass", freq: 850, q: 0.9 } },
+  metallic: { partials: [[1, 1], [2.76, 0.6], [5.40, 0.35], [8.93, 0.22]], decay: 0.96, attack: 0.001, reverb: 0.38 },
+};
+function currentTimbre() { return document.querySelector("#timbre button.on").dataset.timbre; }
+
+// ─── Synthèse Web Audio ─────────────────────────────────────────────────────
+let ctx = null, master = null, reverbSend = null;
+const waves = {};
+let playing = false, loopTimer = null, stepTimer = null;
+const active = new Set();
+
+function makeImpulse(seconds, decay) {
+  const len = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  return buf;
+}
+function ensureAudio() {
+  if (ctx) return;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain();
+  master.gain.value = 0.85;
+  master.connect(ctx.destination);
+  const conv = ctx.createConvolver();
+  conv.buffer = makeImpulse(1.8, 3.0);
+  reverbSend = ctx.createGain();
+  reverbSend.gain.value = 0.26;
+  reverbSend.connect(conv);
+  conv.connect(master);
+  for (const name of Object.keys(TIMBRES)) {
+    const h = TIMBRES[name].harmonics;
+    if (!h) continue;
+    const real = new Float32Array([0, ...h]);
+    waves[name] = ctx.createPeriodicWave(real, new Float32Array(real.length), { disableNormalization: false });
+  }
+}
+function voice(freq, startTime, dur, peak) {
+  const tb = TIMBRES[currentTimbre()];
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, startTime);
+  g.gain.exponentialRampToValueAtTime(peak, startTime + tb.attack);
+  g.gain.exponentialRampToValueAtTime(0.0008, startTime + dur * tb.decay);
+  let tail = g;
+  if (tb.filter) {
+    const f = ctx.createBiquadFilter();
+    f.type = tb.filter.type;
+    f.frequency.value = tb.filter.freq;
+    if (tb.filter.q) f.Q.value = tb.filter.q;
+    g.connect(f);
+    tail = f;
+  }
+  tail.connect(master);
+  tail.connect(reverbSend);
+  const oscs = [];
+  if (tb.partials) {
+    for (const [ratio, amp] of tb.partials) {
+      const o = ctx.createOscillator();
+      o.type = "sine";
+      o.frequency.value = freq * ratio;
+      const pg = ctx.createGain();
+      pg.gain.value = amp;
+      o.connect(pg); pg.connect(g);
+      oscs.push(o);
+    }
+  } else {
+    const o = ctx.createOscillator();
+    o.setPeriodicWave(waves[currentTimbre()]);
+    o.frequency.value = freq;
+    o.connect(g);
+    oscs.push(o);
+  }
+  for (const o of oscs) {
+    o.onended = () => active.delete(o);
+    active.add(o);
+    o.start(startTime);
+    o.stop(startTime + dur + 0.05);
+  }
+}
+
+// ─── État : la phrase = jusqu'à 3 motifs ────────────────────────────────────
+const motifs = [
+  { enabled: true, start: 1, contour: "montant",    step: "pas",  count: 4, stem: 2 },
+  { enabled: true, start: 5, contour: "descendant", step: "pas",  count: 3, stem: 2 },
+  { enabled: true, start: 3, contour: "ondulant",   step: "saut", count: 5, stem: 2 },
+];
+
+function buildPhrase() {
+  const notes = [];
+  motifs.forEach((m, mi) => {
+    if (!m.enabled) return;
+    for (const d of generateMotif(m)) notes.push({ deg: d, stem: m.stem, motif: mi });
+  });
+  return notes;
+}
+function stepDur() { return 60 / Number(document.getElementById("speed").value); }
+
+function scheduleLoop(startTime) {
+  if (!playing) return;
+  const notes = buildPhrase();
+  if (notes.length === 0) { loopTimer = setTimeout(() => scheduleLoop(ctx.currentTime + 0.2), 200); return; }
+  const sd = stepDur();
+  reverbSend.gain.value = TIMBRES[currentTimbre()].reverb;
+  let t = startTime;
+  for (const n of notes) {
+    voice(freqForMidi(midiForStep(n.deg, n.stem)), t, Math.min(sd * 1.9, 1.0), 0.30);
+    t += sd;
+  }
+  const total = sd * notes.length;
+  loopTimer = setTimeout(() => scheduleLoop(startTime + total), Math.max(20, (total - 0.12) * 1000));
+  animate(notes, startTime, sd);
+}
+function animate(notes, startTime, sd) {
+  clearInterval(stepTimer);
+  stepTimer = setInterval(() => {
+    if (!playing) { clearInterval(stepTimer); return; }
+    const i = Math.floor((ctx.currentTime - startTime) / sd);
+    const cur = notes[((i % notes.length) + notes.length) % notes.length];
+    document.querySelectorAll(".card").forEach((el, k) => el.classList.toggle("active", cur && k === cur.motif));
+  }, 45);
+}
+
+// ─── Rendu des cartes-motifs ────────────────────────────────────────────────
+const CONTOURS = ["montant", "descendant", "ondulant"];
+const STEPS = ["pas", "saut"];
+function opts(n, sel) {
+  let s = "";
+  for (let i = 1; i <= n; i++) s += '<option value="' + i + '"' + (i === sel ? " selected" : "") + ">" + i + "</option>";
+  return s;
+}
+function segHTML(field, values, cur) {
+  return '<span class="seg" data-field="' + field + '">' +
+    values.map((v) => '<button data-val="' + v + '"' + (v === cur ? ' class="on"' : "") + ">" + v + "</button>").join("") +
+    "</span>";
+}
+function renderMotifs() {
+  const box = document.getElementById("motifs");
+  box.innerHTML = motifs.map((m, i) => {
+    const notesStr = m.enabled
+      ? generateMotif(m).map((d) => noteName(midiForStep(d, m.stem))).join("  ")
+      : "—";
+    return '<div class="card' + (m.enabled ? "" : " off") + '" data-i="' + i + '">'
+      + '<div class="card-h">'
+      +   '<label class="title"><input type="checkbox" class="en"' + (m.enabled ? " checked" : "") + "> mot " + (i + 1) + "</label>"
+      +   '<span class="notes">' + notesStr + "</span>"
+      + "</div>"
+      + '<div class="ctrls">'
+      +   '<label>départ <select class="start">' + opts(9, m.start) + "</select></label>"
+      +   segHTML("contour", CONTOURS, m.contour)
+      +   segHTML("step", STEPS, m.step)
+      +   '<label>notes <select class="count">' + opts(6, m.count) + "</select></label>"
+      +   '<label>octave ' + segHTML("stem", [1, 2, 3], m.stem).replace('class="seg"', 'class="seg stem"') + "</label>"
+      + "</div>"
+      + "</div>";
+  }).join("");
+}
+
+// ─── Branchements UI ────────────────────────────────────────────────────────
+document.getElementById("motifs").addEventListener("click", (e) => {
+  const btn = e.target.closest(".seg button");
+  if (!btn) return;
+  const card = e.target.closest(".card");
+  const i = Number(card.dataset.i);
+  const field = btn.closest(".seg").dataset.field;
+  let val = btn.dataset.val;
+  if (field === "stem") val = Number(val);
+  motifs[i][field] = val;
+  renderMotifs();
+});
+document.getElementById("motifs").addEventListener("change", (e) => {
+  const card = e.target.closest(".card");
+  const i = Number(card.dataset.i);
+  if (e.target.classList.contains("en")) motifs[i].enabled = e.target.checked;
+  else if (e.target.classList.contains("start")) motifs[i].start = Number(e.target.value);
+  else if (e.target.classList.contains("count")) motifs[i].count = Number(e.target.value);
+  renderMotifs();
+});
+document.getElementById("timbre").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll("#timbre button").forEach((x) => x.classList.toggle("on", x === b));
+});
+
+function start() {
+  ensureAudio();
+  if (ctx.state === "suspended") ctx.resume();
+  if (buildPhrase().length === 0) return;
+  playing = true;
+  document.getElementById("play").disabled = true;
+  document.getElementById("stop").disabled = false;
+  document.getElementById("status").textContent = "▶ en lecture (boucle)…";
+  scheduleLoop(ctx.currentTime + 0.08);
+}
+function stop() {
+  playing = false;
+  clearTimeout(loopTimer);
+  clearInterval(stepTimer);
+  for (const o of active) { try { o.stop(); } catch { /* déjà fini */ } }
+  active.clear();
+  document.getElementById("play").disabled = false;
+  document.getElementById("stop").disabled = true;
+  document.getElementById("status").textContent = "■ arrêté";
+  document.querySelectorAll(".card.active").forEach((el) => el.classList.remove("active"));
+}
+document.getElementById("play").addEventListener("click", start);
+document.getElementById("stop").addEventListener("click", stop);
+
+renderMotifs();
+</script>
+</body>
+</html>

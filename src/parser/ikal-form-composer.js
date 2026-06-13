@@ -52,10 +52,21 @@ function combinations(items, size, start = 0, prefix = []) {
   return result;
 }
 
-export function composeIkalForm(seed, { affiliation = null, slotVIIAffixes = [] } = {}) {
-  const key = seed.form
-    + "|" + (affiliation || "")
-    + "|" + slotVIIAffixes.map(affixKey).join(",");
+export function composeIkalForm(seed, {
+  affiliation = null,
+  configuration = null,
+  fn = null,
+  slotVIIAffixes = [],
+  stem = null,
+} = {}) {
+  const key = [
+    seed.form,
+    affiliation || "",
+    configuration || "",
+    fn || "",
+    stem ?? "",
+    slotVIIAffixes.map(affixKey).join(","),
+  ].join("|");
 
   if (composedFormCache.has(key)) {
     return composedFormCache.get(key);
@@ -67,12 +78,16 @@ export function composeIkalForm(seed, { affiliation = null, slotVIIAffixes = [] 
     ca.affiliation = affiliation;
   }
 
+  if (configuration) {
+    ca.configuration = configuration;
+  }
+
   const form = generateIthkuilWord({
     ca,
-    function: seed.function || "STA",
+    function: fn || seed.function || "STA",
     root: seed.cr,
     slotVIIAffixes,
-    stem: seed.stem ?? 1,
+    stem: stem ?? seed.stem ?? 1,
   });
 
   composedFormCache.set(key, form);
@@ -149,6 +164,102 @@ export function ikalVisualSuggestionForms() {
   }
 
   return visualSuggestionCache;
+}
+
+// Sources à hauteur : un mot = un MOTIF. Les formes-motifs sont ÉNUMÉRÉES
+// (comme les formes affixées audio/visuelles) pour qu'on les trouve en tapant
+// leur approximation ASCII (emz -> emžvuža…) — la façon dont on écrit les mots
+// dans tout le projet. Dimensions : octave (Stem), nb de notes (Configuration),
+// contour + intervalle (affixes fb / řks), note de départ (affixe lc).
+const IKAL_TONE_SOURCE_ROOTS = Object.freeze(["mžv", "žb", "řż", "žd", "lly"]);
+// degrés représentatifs, cohérents avec ikal-motif-affixes.js
+// (fb : 1-3 montant, 4-6 ondulant, 7-9 descendant · řks : >=6 sauts)
+const MOTIF_CONTOUR_FORMS = [
+  { contour: "up", fb: null },
+  { contour: "wave", fb: 5 },
+  { contour: "down", fb: 8 },
+];
+const MOTIF_INTERVAL_FORMS = [
+  { interval: "step", rks: null },
+  { interval: "leap", rks: 7 },
+];
+const MOTIF_COUNT_CONFIG = { 1: null, 2: "DPX", 3: "MFC" };
+
+let motifSuggestionCache = null;
+
+export function ikalMotifSuggestionForms() {
+  if (motifSuggestionCache) {
+    return motifSuggestionCache;
+  }
+
+  const entries = [];
+  const seen = new Set();
+
+  for (const cr of IKAL_TONE_SOURCE_ROOTS) {
+    const seed = IKAL_SEED_ROOTS.find((root) => root.cr === cr);
+
+    if (!seed) {
+      continue;
+    }
+
+    for (const stem of [1, 2, 3]) {
+      for (const count of [1, 2, 3]) {
+        // contour / intervalle n'ont de sens qu'à partir de 2 notes.
+        const contours = count === 1 ? [MOTIF_CONTOUR_FORMS[0]] : MOTIF_CONTOUR_FORMS;
+        const intervals = count === 1 ? [MOTIF_INTERVAL_FORMS[0]] : MOTIF_INTERVAL_FORMS;
+
+        for (const c of contours) {
+          for (const iv of intervals) {
+            for (let start = 1; start <= 9; start++) {
+              const slotVIIAffixes = [];
+
+              if (start !== 1) {
+                slotVIIAffixes.push({ cs: "lc", degree: start, type: 1 });
+              }
+
+              if (c.fb) {
+                slotVIIAffixes.push({ cs: "fb", degree: c.fb, type: 1 });
+              }
+
+              if (iv.rks) {
+                slotVIIAffixes.push({ cs: "řks", degree: iv.rks, type: 1 });
+              }
+
+              let form;
+
+              try {
+                form = composeIkalForm(seed, {
+                  configuration: MOTIF_COUNT_CONFIG[count],
+                  fn: count > 1 ? "DYN" : null,
+                  slotVIIAffixes,
+                  stem,
+                });
+              } catch {
+                continue;
+              }
+
+              if (seen.has(form)) {
+                continue;
+              }
+
+              seen.add(form);
+              entries.push({
+                affixCount: slotVIIAffixes.length,
+                baseForm: seed.form,
+                form,
+                motif: { contour: c.contour, count, interval: iv.interval, start, stem },
+                root: cr,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  motifSuggestionCache = entries;
+
+  return entries;
 }
 
 let affiliationSuggestionCache = null;

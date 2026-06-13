@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 
-import { createIkalPocApp } from "../src/ikal-poc.js";
+import { autoIndentForEnter, createIkalPocApp } from "../src/ikal-poc.js";
 
 function createElementStub() {
   const listeners = new Map();
@@ -244,5 +244,19 @@ assert.deepEqual(imageLastTail[1], ["still", 12, 5, [["fřala", "ftala"]]]);
 assert.equal(imageLastTail[2], "music-start");
 assert.equal(imageLastTail[3][0], "layers");
 assert.deepEqual(imageLastTail[3][1].map((layer) => layer.sequence[0].text), ["ļtala"]);
+
+// Auto-indentation des blocs de mode (Entrée). Sans ça, une ligne tapée sous
+// `alkala:` n'est pas indentée → parser ET autocomplétion la rejettent.
+// Entrée après un en-tête de mode → indente la ligne suivante (2 espaces).
+assert.equal(autoIndentForEnter("alkala:", 7), "  ");
+assert.equal(autoIndentForEnter("lyala:", 6), "  ");
+assert.equal(autoIndentForEnter("lyula:", 6), "  ");
+// Entrée dans un bloc déjà indenté → on garde l'indentation.
+assert.equal(autoIndentForEnter("alkala:\n  ton+monte", 19), "  ");
+// Entrée sur une ligne nue (pas de bloc) → pas d'auto-indent (Entrée normale).
+assert.equal(autoIndentForEnter("ton+monte", 9), null);
+assert.equal(autoIndentForEnter("", 0), null);
+// En-tête avec espaces de fin reconnu aussi.
+assert.equal(autoIndentForEnter("alkala: ", 8), "  ");
 
 console.log("ikal-poc ok");

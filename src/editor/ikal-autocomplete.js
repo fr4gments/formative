@@ -28,6 +28,7 @@ import {
   composeIkalForm,
   ikalAffiliationSuggestionForms,
   ikalAudioSuggestionForms,
+  ikalMotifSuggestionForms,
   ikalVisualSuggestionForms,
 } from "../parser/ikal-form-composer.js";
 import {
@@ -559,12 +560,17 @@ export function suggestIkalWords(query, {
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
   const compositionSuggestions = freeCompositionSuggestions(foldedQuery, roots)
     .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
+  const motifFormSuggestions = ikalMotifSuggestionForms()
+    .map((form) => suggestionFromMotifForm(form, scoreMotifForm(form, foldedQuery)))
+    .filter((suggestion) => suggestion.score > 0)
+    .filter((suggestion) => suggestionCompatibleWithMode(suggestion, mode));
   const merged = [
     ...rootSuggestions,
     ...audioSuggestions,
     ...visualSuggestions,
     ...affiliationSuggestions,
     ...compositionSuggestions,
+    ...motifFormSuggestions,
   ].sort((a, b) => b.score - a.score || (a.sortRank || 0) - (b.sortRank || 0) || a.form.localeCompare(b.form));
   const seenForms = new Set();
   const unique = [];
@@ -767,6 +773,67 @@ function freeCompositionSuggestions(foldedQuery, roots) {
   return suggestions;
 }
 
+// --- Mots-motifs (sources à hauteur) : recherche par approximation ASCII ---
+// Modèle « un mot = un motif » (Étape 6). Comme TOUT le vocabulaire IKAL, ces
+// formes s'écrivent en tapant leur approximation ASCII (emz → emžvuža,
+// emzvuza → emžvuža…) : elles sont énumérées (ikalMotifSuggestionForms) et
+// cherchées par préfixe sur leur forme repliée en ASCII, puis insérées avec
+// leurs diacritiques. Pas d'« intention » : on tape le mot, comme partout.
+const CONTOUR_LABELS = { up: "montant", down: "descendant", wave: "ondulant" };
+
+function motifSignature({ start, contour, interval, count, stem }) {
+  return [
+    "ton",
+    CONTOUR_LABELS[contour] || contour,
+    interval === "leap" ? "sauts" : "pas",
+    count + " note" + (count > 1 ? "s" : ""),
+    "octave " + stem,
+    "départ " + start,
+  ].join(" · ");
+}
+
+function scoreMotifForm(form, query) {
+  const foldedForm = asciiFold(form.form);
+
+  if (form.form === query) {
+    return 980;
+  }
+
+  if (foldedForm === query) {
+    return 880;
+  }
+
+  if (foldedForm.startsWith(query)) {
+    return 620 - foldedForm.length / 100;
+  }
+
+  if (foldedForm.includes(query)) {
+    return 430;
+  }
+
+  return 0;
+}
+
+// Les formes les plus simples d'abord (peu d'affixes, peu de notes, départ bas).
+function motifFormRank(form) {
+  return form.affixCount * 100 + (form.motif.count - 1) * 10 + (form.motif.start - 1);
+}
+
+function suggestionFromMotifForm(form, score) {
+  return {
+    compatibleModes: ["music"],
+    cr: form.root,
+    domain: "music",
+    family: "tone",
+    form: form.form,
+    migrationFrom: [],
+    paramSignature: motifSignature(form.motif),
+    score,
+    sortRank: motifFormRank(form),
+    sense: "ton résonnant — motif",
+  };
+}
+
 // --- Inspection par décomposition : n'importe quelle forme valide, pas
 // seulement la fenêtre de suggestions. ---
 
@@ -802,11 +869,19 @@ export function decompositionInspection(text, mode = null) {
   }
 
   const ithkuil = result.word.ithkuil;
-  const affiliation = ithkuil.ca?.affiliation;
-  const signature = compositionSignature({
-    affiliation: affiliation && affiliation !== "CSL" ? affiliation : null,
-    slotVIIAffixes: ithkuil.affixes?.slotVII || [],
-  });
+  const motif = result.word.params?.motif;
+  let signature;
+
+  if (seed.family === "tone" && motif) {
+    // Source à hauteur : on lit le MOTIF, pas des affixes d'effet.
+    signature = motifSignature(motif);
+  } else {
+    const affiliation = ithkuil.ca?.affiliation;
+    signature = compositionSignature({
+      affiliation: affiliation && affiliation !== "CSL" ? affiliation : null,
+      slotVIIAffixes: ithkuil.affixes?.slotVII || [],
+    });
+  }
 
   return {
     compatibleModes,

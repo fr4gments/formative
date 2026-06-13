@@ -292,4 +292,18 @@ const invalid = resolveIkalParams(base, { effects: { drive: "loud" } });
 assert.equal(invalid.params.effects.drive, base.effects.drive);
 assert.equal(invalid.diagnostics[0].code, "invalid-user-param");
 
+// Palette des 5 timbres mélodiques : le timbre découle du SENS de la racine
+// (porté par le seed) et arrive dans params.motif.timbre.
+for (const [form, timbre] of [
+  ["amžvala", "resonant"],
+  ["žbala", "bell"],
+  ["ařżala", "dark"],
+  ["ždala", "crystal"],
+  ["allyala", "voice"],
+]) {
+  const params = paramsForForm(form);
+  assert.equal(params.family, "tone", form + " doit être famille tone");
+  assert.equal(params.motif.timbre, timbre, form + " → timbre " + timbre);
+}
+
 console.log("ithkuil-to-params ok");

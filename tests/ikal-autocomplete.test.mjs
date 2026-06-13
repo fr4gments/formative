@@ -178,6 +178,36 @@ assert.equal(
 assert.equal(decompositionInspection("avtarļoxa", "music"), null);
 assert.equal(decompositionInspection("wala", null), null);
 
+// Mots-motifs (sources à hauteur, Étape 6) cherchés par approximation ASCII —
+// comme TOUT le vocabulaire IKAL : on tape l'approximation, la forme à
+// diacritiques est suggérée puis insérée. Pas d'« intention ».
+assert.equal(suggestIkalWords("amz", { mode: "music" })[0].form, "amžvala"); // octave grave
+assert.equal(suggestIkalWords("emz", { mode: "music" })[0].form, "emžvala"); // octave médium
+assert.equal(suggestIkalWords("umz", { mode: "music" })[0].form, "umžvala"); // octave aiguë
+// le fold ASCII d'un motif retombe sur la forme à diacritiques
+assert.equal(suggestIkalWords("emzvuza", { mode: "music" })[0].form, "emžvuža");
+assert.equal(
+  suggestIkalWords("emzvuza", { mode: "music" })[0].paramSignature,
+  "ton · montant · pas · 3 notes · octave 2 · départ 1",
+);
+// les sources à hauteur ne sont proposées qu'en musique
+assert.equal(suggestIkalWords("emz", { mode: "image" }).length, 0);
+// l'inspecteur décode le motif d'une forme à hauteur tapée
+assert.equal(
+  decompositionInspection("emžvuža", "music").paramSignature,
+  "ton · montant · pas · 3 notes · octave 2 · départ 1",
+);
+
+// Les 5 timbres mélodiques (= 5 racines) sont trouvables par approximation ASCII
+// et par alias sémantique.
+assert.equal(suggestIkalWords("zb", { mode: "music" })[0].form, "žbala");     // cloche
+assert.equal(suggestIkalWords("arz", { mode: "music" })[0].form, "ařżala");   // drone
+assert.equal(suggestIkalWords("zd", { mode: "music" })[0].form, "ždala");     // blip
+assert.equal(suggestIkalWords("ally", { mode: "music" })[0].form, "allyala"); // chant
+assert.equal(suggestIkalWords("cloche", { mode: "music" })[0].form, "žbala");
+assert.equal(suggestIkalWords("drone", { mode: "music" })[0].form, "ařżala");
+assert.equal(suggestIkalWords("chant", { mode: "music" })[0].form, "allyala");
+
 const replaced = replaceCompletionToken("acxw", completionTokenAt("acxw", 4), "ačxwuža");
 assert.equal(replaced.value, "ačxwuža ");
 assert.equal(replaced.caret, "ačxwuža ".length);

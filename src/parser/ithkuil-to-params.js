@@ -16,6 +16,10 @@ import {
   visualAffixDefinitionFor,
   visualEffectsForAffix,
 } from "./ikal-visual-affixes.js";
+import {
+  isMotifAffix,
+  motifShapeFromAffixes,
+} from "./ikal-motif-affixes.js";
 
 export const IKAL_PARAMS_VERSION = 1;
 
@@ -68,6 +72,11 @@ const ROOT_PARAM_RULES = {
   ļt: { family: "click", role: "voice" },
   lxr: { family: "roll", role: "voice" },
   psw: { family: "breath", role: "voice" },
+  "mžv": { family: "tone", role: "voice" },
+  "žb": { family: "tone", role: "voice" },
+  "řż": { family: "tone", role: "voice" },
+  "žd": { family: "tone", role: "voice" },
+  lly: { family: "tone", role: "voice" },
   fř: { family: "shape", role: "modifier" },
   ft: { family: "texture", role: "modifier" },
   ffr: { family: "distortion", role: "modifier" },
@@ -85,6 +94,7 @@ const FAMILY_EFFECTS = {
   noise: { roughness: 0.78 },
   roll: { roughness: 0.16 },
   texture: { roughness: 0.5 },
+  tone: {},
 };
 
 const FAMILY_VISUAL_EFFECTS = {
@@ -255,7 +265,7 @@ function applyVisualAffixEffect(visualAffixes, definition, degree) {
   visualAffixes[definition.id] = Math.max(visualAffixes[definition.id] || 0, degree);
 }
 
-function unknownAffixDiagnostics(ithkuil) {
+function unknownAffixDiagnostics(ithkuil, { isTone = false } = {}) {
   const diagnostics = [];
 
   for (const [slotName, affixes] of [
@@ -264,6 +274,12 @@ function unknownAffixDiagnostics(ithkuil) {
   ]) {
     for (const affix of affixes) {
       if (audioAffixDefinitionFor(affix) || visualAffixDefinitionFor(affix)) {
+        continue;
+      }
+
+      // Les affixes de forme du motif (départ/contour/intervalle) ne sont
+      // mappés que pour une source à hauteur (famille « tone »).
+      if (isTone && isMotifAffix(affix)) {
         continue;
       }
 
@@ -427,6 +443,23 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
   const family = rootRule.family;
   const role = rootRule.role;
   const mode = role === "mode" ? rootRule.mode || seedRoot.domain : null;
+  const isTone = family === "tone";
+  // Famille à hauteur : le mot décrit un MOTIF (une phrase), pas une note.
+  // Sa forme vient des affixes (départ/contour/intervalle) + de la morphologie
+  // structurelle (nb par Configuration, accord↔arpège par Function, octave par Stem).
+  const motif = isTone
+    ? motifShapeFromAffixes(ithkuil.affixes?.slotVII, {
+        count: multiplicity.count,
+        deploy: motion.kind === "dynamic" ? "sequence" : "chord",
+        stem: ithkuil.stem || 1,
+      })
+    : null;
+
+  // Le timbre vient du SENS de la racine (porté par le seed), pas des affixes.
+  if (motif) {
+    motif.timbre = seedRoot.timbre || "resonant";
+  }
+
   const affixParams = audioParamsForAffixes(ithkuil, family);
   const visualAffixParams = visualParamsForAffixes(ithkuil, family);
   const effects = mergeEffects(
@@ -455,6 +488,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
       stem: ithkuil.stem || 1,
     },
     mode,
+    motif,
     motion,
     multiplicity,
     representation,
@@ -471,7 +505,7 @@ export function paramsForIthkuilWord({ ithkuil, seedRoot, userParams = {} }) {
     diagnostics: [
       ...affixParams.diagnostics,
       ...visualAffixParams.diagnostics,
-      ...unknownAffixDiagnostics(ithkuil),
+      ...unknownAffixDiagnostics(ithkuil, { isTone }),
       ...resolved.diagnostics,
     ],
     params: resolved.params,
